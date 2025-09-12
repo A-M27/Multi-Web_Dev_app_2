@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', path='/scripts/site.js') }}"></script>
+    <title>All Users</title>
+</head>
+<body>
+    <h1>All Users</h1>
+    <ul>
+    {% for user in users %}
+        <li>{{ user.name }} (Email: {{ user.email }}, Sets: {{ user.sets }})</li>
+    {% endfor %}
+    </ul>
+    <a href="{{ url_for('root') }}">Back to All Cards</a>
+</body>
+</html>

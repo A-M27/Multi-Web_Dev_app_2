@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', path='/scripts/site.js') }}"></script>
+    <title>Andre's Random Trivia</title>
+</head>
+<body>
+    <h1>Andre's Random Trivia Questions</h1>
+    <p><strong>Question:</strong> {{ card.question }}</p>
+    <p><strong>Answer:</strong> {{ card.answer }}</p>
+</body>
+</html>
