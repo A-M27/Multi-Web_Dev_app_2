@@ -6,30 +6,29 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from typing import Optional, List
 from datetime import datetime
+from contextlib import asynccontextmanager
+from .db.session import create_db_and_tables, SessionDep
 import json
 import random
 
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the DB
+    create_db_and_tables(lifespan=lifespan)
+    yield
+
+
 # Start the app
-app = FastAPI()
+#Modify our FastAPI app
+app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # List of 5 grocery items
 grocery_items = ["apples", "bread", "milk", "eggs", "cheese"]
 
-# Pydantic Models
-class Card(BaseModel):
-    id: int
-    question: str
-    answer: str
-    set_id: int
-    incorrect_attempts: int = 0
-    last_attempted: Optional[datetime] = None
-
-class Set(BaseModel):
-    id: int
-    name: str
-    user_id: int
 
 class User(BaseModel):
     id: int
@@ -42,6 +41,22 @@ class Deck(BaseModel):
     name: str
     user_id: int
     card_ids: List[int]
+
+
+
+class Set(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str    
+    cards: list["Card"] = Relationship(back_populates="set")
+
+class Card(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    front: str
+    back: str
+    set_id: int | None = Field(default=None, foreign_key="set.id")
+    set: Set | None = Relationship(back_populates="cards")
+
+
 
 # Initialize data
 user_list = [
