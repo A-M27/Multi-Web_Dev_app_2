@@ -1,17 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet">
-    <script src="{{ url_for('static', path='/scripts/site.js') }}"></script>
-    <title>All Sets</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}All Sets{% endblock %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
     <h1>All Sets</h1>
+
     <ul>
-    {% for set in sets %}
-        <li>{{ set.name }} (ID: {{ set.id }}, User ID: {{ set.user_id }})</li>
-    {% endfor %}
+        {% for set in sets %}
+            <li>
+                <a href="/sets/{{ set.id }}">{{ set.name }}</a> (ID: {{ set.id }}, User ID: {{ set.user_id }})
+            </li>
+        {% endfor %}
     </ul>
-    <a href="{{ url_for('root') }}">Back to All Cards</a>
-</body>
-</html>
+
+    <p><a href="/cards">Back to All Cards</a></p>
+{% endblock %}

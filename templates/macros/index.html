@@ -5,11 +5,14 @@
 {% endblock %}
 {% block content %}
     <h1>Andy's Trivia Questions</h1>
-    {% for card in cards %}
-            <div>
+    {% macro render_card(card) %}
+        <div>
             <p><strong>Question:</strong> {{ card.front }}</p>
             <p><strong>Answer:</strong> {{ card.back }}</p>
             <a href="{{ url_for('get_card', card_id=card.id) }}">View Details</a>
         </div>
+    {% endmacro %}
+    {% for card in cards %}
+        {{ render_card(card) }}
     {% endfor %}
 {% endblock %}
