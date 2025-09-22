@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}All Scores{% endblock %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+    <h1>All Scores</h1>
+
+    <ul>
+        {% for score in scores %}
+            <li>User ID: {{ score.user_id }}, Set ID: {{ score.set_id }}, Score: {{ score.score }}% (Date: {{ score.date }})</li>
+        {% endfor %}
+    </ul>
+
+    <p><a href="/">Back to Home</a></p>
+{% endblock %}

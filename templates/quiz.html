@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Trivia Quiz{% endblock %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+    <h1>Trivia Quiz</h1>
+
+    <form method="post" action="/quiz/submit">
+        <input type="hidden" name="user_id" value="1"> <!-- Hardcoded for now; replace with auth -->
+        <input type="hidden" name="set_id" value="{{ set_id if set_id else 0 }}">
+        {% for card in cards %}
+            <p><strong>Question:</strong> {{ card.front }}</p>
+            <label for="answer_{{ card.id }}">Your Answer:</label>
+            <input type="text" name="answer_{{ card.id }}" id="answer_{{ card.id }}" required>
+            <br><br>
+        {% endfor %}
+        <button type="submit">Submit Answers</button>
+    </form>
+{% endblock %}

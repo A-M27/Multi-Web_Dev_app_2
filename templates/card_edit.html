@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Edit Card{% endblock %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+    <h1>Edit Card</h1>
+    <form method="post" action="/cards/{{ card.id }}/edit">
+        <label for="front">Question:</label><br>
+        <input type="text" id="front" name="front" value="{{ card.front }}" required><br><br>
+        <label for="back">Answer:</label><br>
+        <input type="text" id="back" name="back" value="{{ card.back }}" required><br><br>
+        <label for="set_id">Set ID:</label><br>
+        <input type="number" id="set_id" name="set_id" value="{{ card.set_id if card.set_id else '' }}"><br><br>
+        <button type="submit">Update Card</button>
+    </form>
+    <p><a href="/cards/{{ card.id }}">Back to Card</a></p>
+{% endblock %}

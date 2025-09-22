@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Quiz Results{% endblock %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+    <h1>Quiz Results</h1>
+
+    <p>You got {{ score }} out of {{ total }} correct ({{ "%.2f"|format(percentage) }}%)</p>
+    <p><a href="/quiz">Take Another Quiz</a></p>
+    <p><a href="/scores">View All Scores</a></p>
+{% endblock %}
