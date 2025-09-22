@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
 from contextlib import asynccontextmanager
-from db.session import create_db_and_tables, get_session
+from .db.session import create_db_and_tables, get_session
 from sqlmodel import SQLModel, Field, Relationship, select, Session
 import random
 from pathlib import Path
@@ -72,9 +72,6 @@ async def root(request: Request, session: Session = Depends(get_session)):
         context={"cards": cards}
     )
 
-@app.get("/items")
-async def get_items():
-    return {"items": grocery_items}
 
 @app.get("/cards", response_class=HTMLResponse, response_model=None)
 async def get_cards(request: Request, session: Session = Depends(get_session), q: Optional[str] = None):
@@ -97,7 +94,11 @@ async def get_card_by_id(request: Request, card_id: int, session: Session = Depe
             name="card.html",
             context={"card": card}
         )
-    return HTMLResponse(content="Card not found", status_code=404)
+    return templates.TemplateResponse(
+            request=request,
+            name="card.html",
+            context={"card": Card(front="",back="", set_id=0)}
+        )
 
 @app.post("/card/add", response_model=None)
 async def add_card(card: Card, session: Session = Depends(get_session)):
