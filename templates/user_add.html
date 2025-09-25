@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Add User{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="/static/css/styles.css">
+{% endblock %}
+{% block content %}
+    <h1>Add New User (Admin Only)</h1>
+    <form method="post" action="/users/add">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" required><br><br>
+        <label for="is_admin">Admin:</label>
+        <input type="checkbox" id="is_admin" name="is_admin"><br><br>
+        <button type="submit">Add User</button>
+    </form>
+    <p><a href="/users">Back to Users</a></p>
+{% endblock %}

@@ -1,18 +1,54 @@
 {% extends "base.html" %}
-{% block title %}Edit Card{% endblock %}
+{% block title %}Andy's Trivia Questions{% endblock %}
 {% block head %}
-    {{ super() }}
+{{ super() }}
+<link rel="stylesheet" href="/static/css/styles.css">
 {% endblock %}
 {% block content %}
-    <h1>Edit Card</h1>
-    <form method="post" action="/cards/{{ card.id }}/edit">
-        <label for="front">Question:</label><br>
-        <input type="text" id="front" name="front" value="{{ card.front }}" required><br><br>
-        <label for="back">Answer:</label><br>
-        <input type="text" id="back" name="back" value="{{ card.back }}" required><br><br>
-        <label for="set_id">Set ID:</label><br>
-        <input type="number" id="set_id" name="set_id" value="{{ card.set_id if card.set_id else '' }}"><br><br>
-        <button type="submit">Update Card</button>
-    </form>
-    <p><a href="/cards/{{ card.id }}">Back to Card</a></p>
+<h1>Cards</h1>
+
+{% if current_user.is_admin %}
+<p>Admin View: Showing all cards</p>
+{% endif %}
+
+{% if card and card.front and card.back %}
+<h2>Card Details</h2>
+<p><strong>Question:</strong> {{ card.front }}</p>
+<p><strong>Answer:</strong> {{ card.back }}</p>
+<p><strong>Set ID:</strong> {{ card.set_id }}</p>
+{% if current_user.is_admin %}
+<p><strong>Owner:</strong> {{ card.set.user.name }}</p>
+{% endif %}
+<div class="dropdown">
+    <button class="dropbtn">Actions</button>
+    <div class="dropdown-content">
+        <a href="/cards/{{ card.id }}/edit">Edit Card</a>
+        <a href="/cards/add">Add New Card</a>
+    </div>
+</div>
+{% else %}
+{% if cards %}
+{% for card in cards %}
+<div class="card-item">
+    <p><strong>Question:</strong> {{ card.front }}</p>
+    <p><strong>Answer:</strong> {{ card.back }}</p>
+    {% if current_user.is_admin %}
+    <p><strong>Owner:</strong> {{ card.set.user.name }}</p>
+    {% endif %}
+    <p><a href="{{ url_for('get_card', card_id=card.id) }}">View Details</a></p>
+</div>
+{% endfor %}
+<div>
+    <a href="/cards/add">
+        <button class="create-card-btn">Add a Card</button>
+    </a>
+</div>
+{% else %}
+<div class="no-cards-container">
+    <a href="/cards/add">
+        <button class="create-card-btn">Create Card</button>
+    </a>
+</div>
+{% endif %}
+{% endif %}
 {% endblock %}

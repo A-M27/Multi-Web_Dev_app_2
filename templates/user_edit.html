@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}User Details{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="/static/css/styles.css">
+{% endblock %}
+{% block content %}
+    <h1>User Details</h1>
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    {% if current_user and current_user.is_admin %}
+    <p><strong>Admin:</strong> {{ 'Yes' if user.is_admin else 'No' }}</p>
+    {% endif %}
+    {% if current_user and current_user.id == user.id %}
+    <p><a href="/users/logout">Logout</a></p>
+    {% endif %}
+    <p><a href="/users">Back to Users</a></p>
+{% endblock %}

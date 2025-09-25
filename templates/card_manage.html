@@ -1,75 +1,48 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Manage Cards</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
-    <h1>Manage Cards</h1>
-    <div class="dropdown">
-        <button class="dropbtn">Select Action</button>
-        <div class="dropdown-content">
-            <a href="#" onclick="document.getElementById('addForm').style.display='block'; document.getElementById('editForm').style.display='none';">Add New Card</a>
-            <div class="dropdown-submenu">
-                <a href="#" class="submenu-trigger">Edit Existing Card</a>
-                <div class="submenu-content">
-                    {% for card in cards %}
-                        <a href="/card/manage?card_id={{ card.id }}" onclick="document.getElementById('editForm').style.display='block'; document.getElementById('addForm').style.display='none';">{{ card.front }} (ID: {{ card.id }})</a>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
+{% extends "base.html" %}
+{% block title %}Manage Cards{% endblock %}
+{% block head %}
+{{ super() }}
+<script src="/static/scripts/site.js"></script>
+{% endblock %}
+{% block content %}
+<h1>Manage Cards</h1>
 
-    <form id="addForm" method="post" action="/card/manage" style="display:none;">
-        <input type="hidden" name="action" value="add">
-        <label for="front">Question:</label><br>
-        <input type="text" id="front" name="front" required><br><br>
-        <label for="back">Answer:</label><br>
-        <input type="text" id="back" name="back" required><br><br>
-        <label for="set_id">Set ID:</label><br>
-        <input type="number" id="set_id" name="set_id"><br><br>
-        <button type="submit">Add Card</button>
-    </form>
+<div id="noCardsAlert" class="alert">
+    No cards available
+</div>
 
-    <form id="editForm" method="post" action="/card/manage" style="display:none;">
-        <input type="hidden" name="action" value="edit">
-        <input type="hidden" name="card_id" id="edit_card_id" value="{{ card.id if card else '' }}">
-        <label for="front">Question:</label><br>
-        <input type="text" id="front" name="front" value="{{ card.front if card else '' }}" required><br><br>
-        <label for="back">Answer:</label><br>
-        <input type="text" id="back" name="back" value="{{ card.back if card else '' }}" required><br><br>
-        <label for="set_id">Set ID:</label><br>
-        <input type="number" id="set_id" name="set_id" value="{{ card.set_id if card.set_id else '' }}"><br><br>
-        <button type="submit">Update Card</button>
-    </form>
+{% if current_user.is_admin %}
+<p>Admin View: Showing all cards</p>
+{% endif %}
 
-    <p><a href="/cards">Back to All Cards</a></p>
-    <script>
-        // Toggle forms
-        document.querySelectorAll('.dropdown-content a').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (link.classList.contains('submenu-trigger')) return;
-                const formId = link.textContent.includes('Add') ? 'addForm' : 'editForm';
-                document.getElementById('addForm').style.display = 'none';
-                document.getElementById('editForm').style.display = 'none';
-                document.getElementById(formId).style.display = 'block';
-                if (formId === 'editForm') {
-                    const cardId = link.getAttribute('href').split('card_id=')[1];
-                    document.getElementById('edit_card_id').value = cardId;
-                }
-            });
-        });
+{% if no_cards %}
+<script>
+    showAlert();
+</script>
+{% endif %}
 
-        // Toggle submenu
-        document.querySelectorAll('.submenu-trigger').forEach(trigger => {
-            trigger.addEventListener('click', (e) => {
-                e.preventDefault();
-                const submenu = trigger.nextElementSibling;
-                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
-            });
-        });
-    </script>
-</body>
-</html>
+<form method="post" action="/cards/add">
+    <label for="front">Question:</label><br>
+    <input type="text" id="front" name="front" required><br><br>
+    <label for="back">Answer:</label><br>
+    <input type="text" id="back" name="back" required><br><br>
+    <button type="submit">Add Card</button>
+    <p>(Set will be auto-assigned to your default set)</p>
+</form>
+
+{% if cards %}
+{% for card in cards %}
+<div class="card-item">
+    <p><strong>Question:</strong> {{ card.front }}</p>
+    <p><strong>Answer:</strong> {{ card.back }}</p>
+    {% if current_user.is_admin %}
+    <p><strong>Owner:</strong> {{ card.set.user.name }}</p>
+    {% endif %}
+    <p><a href="{{ url_for('get_card', card_id=card.id) }}">View Details</a> | 
+    <a href="/cards/{{ card.id }}/edit">Edit</a></p>
+</div>
+{% endfor %}
+{% else %}
+<p>No cards available for you.</p>
+{% endif %}
+{% endblock %}

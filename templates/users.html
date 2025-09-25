@@ -1,16 +1,48 @@
 {% extends "base.html" %}
-{% block title %}All Users{% endblock %}
+{% block title %}Users{% endblock %}
 {% block head %}
     {{ super() }}
+    <link rel="stylesheet" href="/static/css/styles.css">
 {% endblock %}
 {% block content %}
-    <h1>All Users</h1>
+    <h1>Users</h1>
 
-    <ul>
-        {% for user in users %}
-            <li>{{ user.name }} (Email: {{ user.email }}, Sets: {{ user.sets }}) <a href="/users/{{ user.id }}">Dashboard</a></li>
-        {% endfor %}
-    </ul>
+    {% if guest %}
+    <p>Please <a href="/users/login">login</a> or <a href="/users/register">create an account</a>.</p>
+    {% else %}
+    {% if current_user.is_admin %}
+    <p>Admin View: Managing all users</p>
+    <div>
+        <a href="/users/add">
+            <button class="create-card-btn">Add New User</button>
+        </a>
+    </div>
+    {% endif %}
 
-    <p><a href="/cards">Back to All Cards</a></p>
+    {% if users %}
+    {% for user in users %}
+    <div class="card-item">
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        {% if current_user.is_admin %}
+        <p><strong>Admin:</strong> {{ 'Yes' if user.is_admin else 'No' }}</p>
+        {% endif %}
+        <p>
+            <a href="/users/{{ user.id }}">View Details</a>
+            {% if current_user.is_admin and current_user.id != user.id %}
+            | <a href="/users/{{ user.id }}/edit">Edit</a> | 
+            <form method="post" action="/users/{{ user.id }}/delete" style="display:inline;">
+                <button type="submit" onclick="return confirm('Are you sure?')">Delete</button>
+            </form>
+            {% endif %}
+        </p>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>No users found.</p>
+    {% endif %}
+    {% endif %}
+
+    {% if current_user %}
+    <p><a href="/users/logout">Logout</a></p>
+    {% endif %}
 {% endblock %}

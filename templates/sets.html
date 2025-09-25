@@ -2,18 +2,54 @@
 {% block title %}All Sets{% endblock %}
 {% block head %}
     {{ super() }}
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="/static/scripts/site.js"></script>
 {% endblock %}
 {% block content %}
     <h1>All Sets</h1>
 
+    <div id="noSetsAlert" class="alert">
+        No sets available
+    </div>
+
+    {% if no_sets %}
+    <script>
+        showAlert('noSetsAlert');
+    </script>
+    {% endif %}
+
+    {% if guest %}
+    <p>Please <a href="/users/login">login</a> to view sets.</p>
+    {% else %}
+    {% if current_user.is_admin %}
+    <p>Admin View: Showing all sets</p>
+    {% endif %}
+
+    {% if sets %}
     <ul>
         {% for set in sets %}
-            <li>
-                <a href="/sets/{{ set.id }}">{{ set.name }}</a> (ID: {{ set.id }}, User ID: {{ set.user_id }})
-            </li>
+        <li>
+            <a href="/sets/{{ set.id }}">{{ set.name }}</a> 
+            {% if current_user.is_admin %}
+            (ID: {{ set.id }}, Owner: {{ set.user.name }})
+            {% else %}
+            (ID: {{ set.id }})
+            {% endif %}
+        </li>
         {% endfor %}
     </ul>
+    {% if current_user.is_admin %}
+    <div>
+        <a href="/sets/add">
+            <button class="create-card-btn">Add New Set</button>
+        </a>
+    </div>
+    {% endif %}
+    {% else %}
+    <p>No sets available for you.</p>
+    {% endif %}
 
     <p><a href="/cards">Back to All Cards</a></p>
     <p><a href="/scores">View All Scores</a></p>
+    {% endif %}
 {% endblock %}

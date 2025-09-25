@@ -1,0 +1,70 @@
+/*
+    menu.css
+    Responsive navigation: Hamburger menu on small screens, full top banner on large screens.
+*/
+
+/* --- Large screen styles (≥768px) - Full top banner (Lateral Expansion) --- */
+@media screen and (min-width: 768px) {
+    .banner {
+        /* Align content to the start (left) */
+        justify-content: flex-start;
+    }
+
+    /* Hide the menu button on large screens */
+    .dropbtn {
+        display: none; 
+    }
+
+    /* Make the dropdown menu horizontal and always visible */
+    .dropdown-content {
+        display: flex !important; /* Force open horizontally */
+        position: static; /* Make it part of the normal flow */
+        background-color: transparent;
+        box-shadow: none;
+        width: auto;
+        margin: 0;
+        flex-direction: row; /* Layout links horizontally (laterally) */
+        align-items: center; 
+    }
+
+    .dropdown-content a {
+        color: white; /* Change link color for the dark banner */
+        padding: 10px 15px;
+        white-space: nowrap;
+    }
+    
+    .dropdown-content a:hover {
+        background-color: #45a049; /* Darker green hover for the dark banner */
+    }
+
+    /* Submenu logic for horizontal desktop menu (drops down on hover) */
+    .dropdown-submenu:hover .submenu-content {
+        display: block;
+        position: absolute; /* Revert to absolute for desktop drop-down */
+        top: 100%; /* Drop down from the main link */
+        left: 0;
+        background-color: #f9f9f9; /* Restore light background for sub-menu */
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        color: black;
+        width: max-content;
+    }
+
+    /* Hide the submenu content by default on desktop for hover activation */
+    .dropdown-submenu .submenu-content {
+        display: none; 
+        position: absolute;
+        left: 0;
+        top: 100%;
+    }
+
+    /* Show the welcome message on large screens and push it to the right */
+    .user-welcome {
+        display: block;
+        margin-left: auto; /* Pushes the element as far right as possible */
+        color: white;
+    }
+    
+    .user-welcome a {
+        color: lightblue;
+    }
+}

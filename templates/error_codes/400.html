@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bad Request</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 8em;
+            margin: 0;
+            color: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+        p {
+            font-size: 1.5em;
+        }
+        a {
+            color: #1e90ff;
+            text-decoration: none;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>400</h1>
+        <p>The server could not understand your request.</p>
+        <p>Please check the URL or form data and try again.</p>
+        <p>Go back to the <a href="/">homepage</a>.</p>
+    </div>
+</body>
+</html>

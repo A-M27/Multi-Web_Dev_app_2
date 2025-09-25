@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Andy's Trivia App - Home{% endblock %}
+{% block head %}
+    {{ super() }}
+    {% endblock %}
+{% block content %}
+    <h1>Welcome to Andy's Trivia App</h1>
+
+    <section id="about-app">
+        <h2>About the App</h2>
+        <p>Andy's Trivia App is a fun and interactive platform to test your knowledge with custom trivia cards. Create, manage, and play with your own sets of questions, or challenge yourself with sets created by others (admin access required).</p>
+    </section>
+
+    <section id="about-builder">
+        <h2>About the Builder</h2>
+        <p>Built by Andy, a passionate developer who loves creating engaging web applications. This app was crafted to bring the joy of trivia to everyone, with a focus on simplicity and user-friendly design.</p>
+    </section>
+
+    <section id="app-purpose">
+        <h2>Purpose</h2>
+        <p>The purpose of Andy's Trivia App is to provide a platform for learning and entertainment through trivia. Whether you're studying for a test or just love trivia, you can create personalized card sets and play at your own pace.</p>
+    </section>
+
+    <section id="contact-info">
+        <h2>Contact Us</h2>
+        <p>Have questions or feedback? Reach out to Andre MUGARURA at Phone:<a href="tel:+1 765 7445549"> +17657445549</a> Email: <a href="mailto:andre_mugarura@taylor.edu">andre_mugarura@taylor.edu</a>.</p>
+    </section>
+
+    <section id="location-info">
+        <h2>Our Location</h2>
+        <p>This is a web application accessible from anywhere! The main development hub is located in Upland, Indiana.</p>
+    </section>
+    
+    <section>
+        <h2>Features</h2>
+        <ul>
+            <li>Create and manage your own trivia cards.</li>
+            <li>Organize cards into sets for easy access.</li>
+            <li>Play trivia games with random cards from your sets.</li>
+            <li>Admin users can manage all users and view all sets.</li>
+        </ul>
+    </section>
+{% endblock %}

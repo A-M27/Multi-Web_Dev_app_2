@@ -1,29 +1,74 @@
-/* Existing styles remain, adding submenu styles */
+/* General styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+section {
+    margin: 20px 0;
+    padding: 15px;
+}
+
+/* Banner styles */
+.banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    position: relative;
+}
+
+.user-welcome {
+    margin: 0;
+    padding: 0 10px;
+    /* Hidden by default, shown by media query in menu.css */
+    display: none; 
+}
+
+/* Dropdown and submenu styles (Mobile/Default) */
 .dropdown {
     position: relative;
-    display: inline-block;
-    margin: 10px 0;
+    display: flex; 
 }
 
 .dropbtn {
     background-color: #4CAF50;
     color: white;
-    padding: 10px 20px;
+    padding: 10px 15px;
     border: none;
     cursor: pointer;
+    font-size: 0; /* Hide text 'Menu' */
+}
+
+.dropbtn::after {
+    content: "☰"; /* Hamburger icon */
+    font-size: 18px;
+    color: white;
 }
 
 .dropbtn:hover, .dropbtn:focus {
     background-color: #45a049;
 }
 
+/* Menu is hidden by default on mobile, revealed by JS */
 .dropdown-content {
-    display: none;
+    display: none; 
     position: absolute;
+    top: 100%;
+    left: 0;
     background-color: #f9f9f9;
-    min-width: 160px;
+    min-width: 200px;
+    width: max-content;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
+    z-index: 1000;
+    flex-direction: column; /* Stack links vertically on mobile */
 }
 
 .dropdown-content a {
@@ -31,69 +76,34 @@
     padding: 12px 16px;
     text-decoration: none;
     display: block;
+    text-align: left;
 }
 
 .dropdown-content a:hover {
     background-color: #f1f1f1;
 }
 
-.dropdown:hover .dropdown-content {
-    display: block;
-}
-
-/* Submenu styling */
+/* Submenu structure for mobile */
 .dropdown-submenu {
     position: relative;
 }
 
 .dropdown-submenu .submenu-content {
+    /* Initially hidden */
     display: none;
-    position: absolute;
-    left: 100%;
+    /* Positioned next to the link on mobile */
+    position: relative; 
+    left: 0;
     top: 0;
     background-color: #f9f9f9;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
+    min-width: 180px;
+    width: 100%;
+    box-shadow: none; /* Submenus don't need shadow in the mobile dropdown */
+    z-index: 1000;
 }
 
-.dropdown-submenu:hover .submenu-content {
-    display: block;
-}
-
-/* Style for card items */
-.card-item {
-    border: 1px solid #ddd;
-    padding: 10px;
-    margin: 10px 0;
-}
-
-/* Manage page form styling */
-form {
-    margin: 20px 0;
-    padding: 15px;
-    border: 1px solid #ccc;
-    display: inline-block;
-}
-
-label {
-    font-weight: bold;
-}
-
-input, select {
-    margin: 5px 0;
-    padding: 5px;
-    width: 200px;
-}
-
-button {
-    padding: 10px 20px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #45a049;
+/* Mobile Active Class (Toggled by site.js) */
+.dropdown-content.show {
+    /* Shows the menu on click */
+    display: flex !important;
 }
