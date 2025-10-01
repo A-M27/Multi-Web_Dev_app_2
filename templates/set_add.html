@@ -1,15 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Add Set{% endblock %}
+{% block title %}Add New Set{% endblock %}
 {% block head %}
     {{ super() }}
-    <link rel="stylesheet" href="/static/css/styles.css">
 {% endblock %}
 {% block content %}
-    <h1>Add New Set (Admin Only)</h1>
-    <form method="post" action="/sets/add">
-        <label for="name">Set Name:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
-        <button type="submit">Add Set</button>
-    </form>
-    <p><a href="/sets">Back to All Sets</a></p>
+<div class="container">
+    <h1>Add New Flashcard Set</h1>
+    
+    <div class="card form-card">
+        <form action="/sets/add" method="post">
+            <div class="form-group">
+                <label for="name">Set Name:</label>
+                <input type="text" id="name" name="name" required placeholder="e.g., World History, Science Facts">
+            </div>
+            
+            <button type="submit" class="btn">Create Set</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

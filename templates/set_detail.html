@@ -2,32 +2,39 @@
 {% block title %}Set: {{ set.name }}{% endblock %}
 {% block head %}
     {{ super() }}
-    <link rel="stylesheet" href="/static/css/styles.css">
 {% endblock %}
 {% block content %}
-    <h1>Set: {{ set.name }}</h1>
+<div class="container">
+    <h1>Set Details: {{ set.name }}</h1>
 
-    <p><strong>ID:</strong> {{ set.id }}</p>
-    {% if current_user.is_admin %}
-    <p><strong>Owner:</strong> {{ set.user.name }}</p>
+    <div class="actions">
+        <a href="/sets/{{ set.id }}/edit" class="btn">Edit Set Details</a>
+        <a href="/cards/add?set_id={{ set.id }}" class="btn">Add a Card to this Set</a>
+    </div>
+
+    {% if set.user %}
+        <p>Created by: <strong>{{ set.user.username }}</strong></p>
     {% endif %}
 
-    <h2>Cards in this Set</h2>
-
+    <h2>Cards in Set ({{ cards | length }})</h2>
+    
     {% if cards %}
-    <ul>
-        {% for card in cards %}
-        <li>
-            <p><strong>Question:</strong> {{ card.front }}</p>
-            <p><strong>Answer:</strong> {{ card.back }}</p>
-            <p><a href="{{ url_for('get_card', card_id=card.id) }}">View Details</a></p>
-        </li>
-        {% endfor %}
-    </ul>
+        <div class="cards-grid">
+            {% for card in cards %}
+                <div class="card">
+                    <h3>Question: {{ card.front }}</h3>
+                    <p class="answer">{{ card.back }}</p>
+                    <div class="card-actions">
+                        <a href="/cards/{{ card.id }}" class="btn">View Details</a>
+                        <a href="/cards/{{ card.id }}/edit" class="btn">Edit Card</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     {% else %}
-    <p>No cards in this set.</p>
+        <div class="card">
+            <p>This set has no cards yet. Use the "Add a Card to this Set" button above!</p>
+        </div>
     {% endif %}
-
-    <p><a href="/sets">Back to All Sets</a></p>
-    <p><a href="/quiz?set_id={{ set.id }}">Start Quiz for this Set</a></p>
+</div>
 {% endblock %}

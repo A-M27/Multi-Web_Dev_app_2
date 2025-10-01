@@ -2,12 +2,23 @@
 {% block title %}Play Trivia{% endblock %}
 {% block head %}
     {{ super() }}
+    <style>
+        .play-card .answer { cursor: pointer; color: #007bff; font-weight: bold; }
+    </style>
 {% endblock %}
 {% block content %}
-    <h1>Andre's Random Trivia Questions</h1>
-
-    <p><strong>Question:</strong> {{ card.front }}</p>
-    <p><strong>Answer:</strong> {{ card.back }}</p>
-    <p><a href="/play">Next Question</a></p>
-    <p><a href="/quiz">Try a Quiz!</a></p>
+<div class="container">
+    <h1>Play Trivia</h1>
+    <div class="play-card card">
+        <h2>{{ card.front }}</h2>
+        <p class="answer" onclick="this.style.display='none'; document.getElementById('answer-reveal').style.display='block';">
+            (Click to reveal answer)
+        </p>
+        <div id="answer-reveal" class="answer" style="display: none;">
+            {{ card.back }}
+        </div>
+        <a href="/play/next" class="btn">Next Question</a>
+    </div>
+    <a href="/quiz" class="btn">Try a Quiz!</a>
+</div>
 {% endblock %}

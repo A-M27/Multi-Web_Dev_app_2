@@ -4,17 +4,20 @@
     {{ super() }}
 {% endblock %}
 {% block content %}
+<div class="container">
     <h1>Trivia Quiz</h1>
-
-    <form method="post" action="/quiz/submit">
-        <input type="hidden" name="user_id" value="1"> <!-- Hardcoded for now; replace with auth -->
-        <input type="hidden" name="set_id" value="{{ set_id if set_id else 0 }}">
+    <form action="/quiz/submit" method="post" class="quiz-form">
         {% for card in cards %}
-            <p><strong>Question:</strong> {{ card.front }}</p>
-            <label for="answer_{{ card.id }}">Your Answer:</label>
-            <input type="text" name="answer_{{ card.id }}" id="answer_{{ card.id }}" required>
-            <br><br>
+            <div class="quiz-card card">
+                <h3>{{ card.front }}</h3>
+                <div class="form-group">
+                    <label for="answer-{{ card.id }}">Your Answer:</label>
+                    <input type="text" id="answer-{{ card.id }}" name="answer-{{ card.id }}" required>
+                    <input type="hidden" name="card-{{ card.id }}" value="{{ card.back }}">
+                </div>
+            </div>
         {% endfor %}
-        <button type="submit">Submit Answers</button>
+        <button type="submit" class="btn">Submit Answers</button>
     </form>
+</div>
 {% endblock %}

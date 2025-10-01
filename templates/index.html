@@ -1,23 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Andy's Trivia Questions{% endblock %}
+{% block title %}Andy's Trivia App - Home{% endblock %}
 {% block head %}
     {{ super() }}
 {% endblock %}
 {% block content %}
-    <h1>Andy's Trivia Questions</h1>
-
+<div class="container">
+    <h1>Andy's Trivia App</h1>
     {% if card %}
-        <div>
-            <p><strong>Question:</strong> {{ card.front }}</p>
-            <p><strong>Answer:</strong> {{ card.back }}</p>
+        <div class="card play-card">
+            <h2>Question: {{ card.front }}</h2>
+            <p class="answer" onclick="this.style.display='none'; document.getElementById('answer-reveal').style.display='block';">
+                (Click to reveal answer)
+            </p>
+            <div id="answer-reveal" class="answer" style="display: none;">
+                {{ card.back }}
+            </div>
         </div>
     {% else %}
-        {% for card in cards %}
-            <div>
-                <p><strong>Question:</strong> {{ card.front }}</p>
-                <p><strong>Answer:</strong> {{ card.back }}</p>
-                <p><a href="{{ url_for('get_card', card_id=card.id) }}">View Details</a></p>
-            </div>
-        {% endfor %}
+        <div class="cards-grid">
+            {% for card in cards %}
+                <div class="card">
+                    <h3>Question: {{ card.front }}</h3>
+                    <p class="answer">{{ card.back }}</p>
+                    <a href="/card/{{ card.id }}" class="btn">View Details</a>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
+</div>
 {% endblock %}

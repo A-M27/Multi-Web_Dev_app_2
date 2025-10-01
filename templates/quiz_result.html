@@ -4,9 +4,12 @@
     {{ super() }}
 {% endblock %}
 {% block content %}
-    <h1>Quiz Results</h1>
-
-    <p>You got {{ score }} out of {{ total }} correct ({{ "%.2f"|format(percentage) }}%)</p>
-    <p><a href="/quiz">Take Another Quiz</a></p>
-    <p><a href="/scores">View All Scores</a></p>
+<div class="container">
+    <div class="results card">
+        <h1>Quiz Results</h1>
+        <h2>You got {{ score }} out of {{ total }} correct ({{ "%.2f"|format(percentage) }}%)</h2>
+        <a href="/quiz" class="btn">Take Another Quiz</a>
+        <a href="/scores" class="btn">View All Scores</a>
+    </div>
+</div>
 {% endblock %}
