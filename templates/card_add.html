@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Manage Cards{% endblock %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+<div class="container">
+<h1>Add a card</h1>
+<form action="/cards/add" method="post" class="card">
+        <h2>Add Card</h2>
+        <p>(Set will be auto-assigned to your default set)</p>
+        <div class="form-group">
+            <label for="front">Question:</label>
+            <input type="text" id="front" name="front" required>
+        </div>
+        <div class="form-group">
+            <label for="back">Answer:</label>
+            <textarea id="back" name="back" required></textarea>
+        </div>
+        <button type="submit" class="btn">Add Card</button>
+</form>
+ 
+<section>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+    </section>
+</div>
+{% endblock %}

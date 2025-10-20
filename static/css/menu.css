@@ -3,12 +3,17 @@
     Responsive navigation: Hamburger menu on small screens, full top banner on large screens.
 */
 
-/* --- Large screen styles (≥768px) - Full top banner (Lateral Expansion) --- */
-@media screen and (min-width: 768px) {
+/* --- Large screen styles (≥300px) - Full top banner (Lateral Expansion) --- */
+@media screen and (min-width: 550px) {
     .banner {
-        /* Align content to the start (left) */
-        justify-content: flex-start;
+        justify-content: space-between;
+        width: 100%; 
     }
+    
+    .dropdown {
+        flex-grow: 1; 
+    }
+    
 
     /* Hide the menu button on large screens */
     .dropbtn {
@@ -20,21 +25,48 @@
         display: flex !important; /* Force open horizontally */
         position: static; /* Make it part of the normal flow */
         background-color: transparent;
-        box-shadow: none;
-        width: auto;
-        margin: 0;
+        /*box-shadow: 0 2px 4px #007BFF;*/
+        box-shadow:0;
+      
+        width: 100%; 
+
+        justify-content: space-around;
+        margin: 0; 
+        
         flex-direction: row; /* Layout links horizontally (laterally) */
         align-items: center; 
+        gap: 2px;
+
+        /* OPTIONAL: Use this to space out elements across the entire width */
+        /* justify-content: space-between; */
     }
 
+
     .dropdown-content a {
-        color: white; /* Change link color for the dark banner */
-        padding: 10px 15px;
+        color: black; /* Change link color for the dark banner */
+        padding: 12px 30px;
         white-space: nowrap;
+        background-color: transparent;
+
     }
     
-    .dropdown-content a:hover {
-        background-color: #45a049; /* Darker green hover for the dark banner */
+
+      .submenu-content a {
+           background-color: #007BFF;
+           padding: 12px 50px;
+           color: white;
+      }
+      
+     .dropdown-content a:hover,
+     .dropdown-submenu:hover > a {
+         background-color: #007BFF;
+         color: white;
+         /*box-shadow: 0 2px 4px #007BFF;*/
+     }
+
+    .submenu-content a:hover {
+        background-color: white;
+        color: #007BFF;
     }
 
     /* Submenu logic for horizontal desktop menu (drops down on hover) */
@@ -43,8 +75,8 @@
         position: absolute; /* Revert to absolute for desktop drop-down */
         top: 100%; /* Drop down from the main link */
         left: 0;
-        background-color: #f9f9f9; /* Restore light background for sub-menu */
-        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        background-color: #ADD8E6;
+        box-shadow: 0px 8px 16px 0px #007BFF;
         color: black;
         width: max-content;
     }
@@ -59,9 +91,11 @@
 
     /* Show the welcome message on large screens and push it to the right */
     .user-welcome {
+        margin: 0;
+        padding: 0 10px;
+        display: none; /* Hidden by default, shown by media query */
         display: block;
-        margin-left: auto; /* Pushes the element as far right as possible */
-        color: white;
+        color: blue;
     }
     
     .user-welcome a {

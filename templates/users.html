@@ -1,48 +1,83 @@
 {% extends "base.html" %}
-{% block title %}Users{% endblock %}
+{% block title %}Create Account{% endblock %}
 {% block head %}
     {{ super() }}
-    <link rel="stylesheet" href="/static/css/styles.css">
 {% endblock %}
 {% block content %}
+<div class="container">
     <h1>Users</h1>
 
     {% if guest %}
     <p>Please <a href="/users/login">login</a> or <a href="/users/register">create an account</a>.</p>
     {% else %}
     {% if current_user.is_admin %}
-    <p>Admin View: Managing all users</p>
-    <div>
-        <a href="/users/add">
-            <button class="create-card-btn">Add New User</button>
-        </a>
-    </div>
-    {% endif %}
 
+    <form action="/users/add" method="post" class="form" action="/users/add" method="post" class="users">
+        <h2>Add New User</h2>
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <label for="is_admin">Admin:</label>
+        <input type="checkbox" id="is_admin" name="is_admin"><br><br>
+        <button type="submit " class="btn">Add User</button>
+    </form>
+    {% endif %}
+    <section>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+    </section>
     {% if users %}
     {% for user in users %}
-    <div class="card-item">
+    <div class="users" >
         <p><strong>Username:</strong> {{ user.username }}</p>
         {% if current_user.is_admin %}
         <p><strong>Admin:</strong> {{ 'Yes' if user.is_admin else 'No' }}</p>
         {% endif %}
         <p>
+        
+            <br>
             <a href="/users/{{ user.id }}">View Details</a>
+            <br>
             {% if current_user.is_admin and current_user.id != user.id %}
-            | <a href="/users/{{ user.id }}/edit">Edit</a> | 
-            <form method="post" action="/users/{{ user.id }}/delete" style="display:inline;">
-                <button type="submit" onclick="return confirm('Are you sure?')">Delete</button>
+            <a href="/users/{{ user.id }}/edit">Edit</a>
+           
+           <br>
+           <br>
+           <br>
+           <form method="post"  class="btn" action="/users/{{ user.id }}/delete" style="display:inline;">
+                <button type="submit" class="btn" onclick="return confirm('Are you sure?')">Delete</button>
             </form>
             {% endif %}
         </p>
     </div>
+    <br>
     {% endfor %}
     {% else %}
     <p>No users found.</p>
     {% endif %}
     {% endif %}
 
-    {% if current_user %}
-    <p><a href="/users/logout">Logout</a></p>
-    {% endif %}
+    <section>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+    </section>
+</div>
 {% endblock %}

@@ -1,20 +1,23 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.templating import Jinja2Templates
+from fastapi import WebSocket, WebSocketDisconnect, Cookie #Import websocket and cookies
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse # Import RedirectResponse
 from contextlib import asynccontextmanager
 from .db.session import create_db_and_tables, engine
 from .routes.cards import router as cards_router
 from .routes.sets import router as sets_router
 from .routes.users import router as users_router
 from .routes.home_route import router as home_router
-# Assume 'scores' router exists in 'routes/scores.py' and needs to be imported:
 from .routes.scores import router as scores_router # ADD THIS IMPORT
-from .db.models import User, Set, Card
+#from .routes.playwithfriends import router as playwithfriends_router
+from .db.models import User, Set, Card, User
 from sqlmodel import Session, select
 from pydantic import BaseModel
 from typing import Optional, List
 from pathlib import Path
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -91,6 +94,19 @@ async def not_found_exception_handler(request: Request, exc: HTTPException):
         status_code=404
     )
 
+@app.exception_handler(403) # <-- NEW HANDLER ADDED
+async def forbidden_exception_handler(request: Request, exc: HTTPException):
+    # For a 403 (Forbidden/Unauthorized), redirect to home page
+    return RedirectResponse(url="/users/login?next=" + str(request.url), status_code=303)
+    
+@app.exception_handler(405) # <-- NEW HANDLER ADDED
+async def method_not_allowed_exception_handler(request: Request, exc: HTTPException):
+    return templates.TemplateResponse(
+        "error_codes/405.html",
+        {"request": request, "status_code": 405, "detail": exc.detail},
+        status_code=405
+    )
+
 @app.exception_handler(400)
 async def bad_request_exception_handler(request: Request, exc: HTTPException):
     return templates.TemplateResponse(
@@ -101,9 +117,11 @@ async def bad_request_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(500)
 async def internal_server_error_handler(request: Request, exc: Exception):
+    # Log the error for debugging
+    print(f"Internal Server Error: {exc}") 
     return templates.TemplateResponse(
         "error_codes/500.html",
-        {"request": request, "status_code": 500},
+        {"request": request, "status_code": 500, "detail": "An unexpected server error occurred."},
         status_code=500
     )
 
@@ -119,8 +137,14 @@ class Deck(BaseModel):
     user_id: int
     card_ids: List[int]
 
+
+
+
+
+
 app.include_router(cards_router)
 app.include_router(sets_router)
 app.include_router(users_router)
 app.include_router(home_router)
-app.include_router(scores_router) # ADD THIS INCLUDE
+app.include_router(scores_router)
+#app.include_router(playwithfriends_router)
