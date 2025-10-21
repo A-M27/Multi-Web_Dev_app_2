@@ -13,8 +13,8 @@ from fastapi import WebSocket, WebSocketDisconnect, Cookie, Query
 from pathlib import Path
 from pydantic import BaseModel
 import time
+from sqlalchemy.orm import joinedload
 
-# --- GAME MODELS ---
 class LiveGame(BaseModel):
     game_id: str
     creator_id: int
@@ -30,7 +30,6 @@ class LiveGame(BaseModel):
     score: float = 0.0
     start_time: float = time.time()
 
-# --- GLOBAL GAME STATE ---
 active_games: Dict[str, LiveGame] = {}
 score_boards: Dict[str, Dict] = {}
 
@@ -38,7 +37,6 @@ score_boards: Dict[str, Dict] = {}
 router = APIRouter(prefix="/cards")
 templates = Jinja2Templates(directory="templates") 
 
-# --- CONNECTION MANAGER ---
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, Dict[str, WebSocket]] = {}
@@ -66,17 +64,13 @@ class ConnectionManager:
 manager = ConnectionManager()
 SessionDep = Annotated[Session, Depends(get_session)]
 
-# --- GAME MANAGER FUNCTIONS ---
-
 def generate_game_id() -> str:
-    """Generates a simple unique 6-digit game ID."""
     while True:
         game_id = "".join(random.choices('0123456789', k=6))
         if game_id not in active_games:
             return game_id
 
 def create_new_game(session: Session, current_user: User, set_id: int, num_questions: int, is_solo: bool = False) -> LiveGame:
-    """Creates a new game instance, adapted for solo use."""
     game_id = generate_game_id()
     
     selected_set = session.exec(select(Set).where(Set.id == set_id)).first()
@@ -98,7 +92,6 @@ def create_new_game(session: Session, current_user: User, set_id: int, num_quest
         card_ids=selected_card_ids,
         questions_limit=num_questions,
         is_solo=is_solo,
-        # FIX: Explicitly set state to IN_PROGRESS for solo games upon creation
         state="IN_PROGRESS" if is_solo else "WAITING" 
     )
     active_games[game_id] = new_game
@@ -111,8 +104,6 @@ def get_current_card(session: Session, game: LiveGame) -> Optional[Card]:
         card_id = game.card_ids[game.current_card_index]
         return session.exec(select(Card).where(Card.id == card_id)).first()
     return None
-
-# --- GRADING HELPER FUNCTIONS ---
 
 def normalize_text(text: str) -> str:
     text = text.lower()
@@ -136,7 +127,6 @@ def grade_answer(user_answer: str, correct_answer: str) -> str:
     return 'wrong'
 
 def update_score_board(game_id: str, username: str, result: str):
-    """Updates the game's specific scoreboard with 5-point grading system."""
     global score_boards
     POINTS_CORRECT = 5.0
     POINTS_HALF = 2.5
@@ -157,8 +147,182 @@ def update_score_board(game_id: str, username: str, result: str):
     board[username]['grade'] = total_grade
     return board[username]
 
+@router.get("/", response_class=HTMLResponse)
+async def get_cards(request: Request, session: SessionDep = None, 
+                    q: Optional[str] = None, current_user: Optional[User] = Depends(get_current_user)):
+    if not current_user:
+        return templates.TemplateResponse(
+            request=request,
+            name="card.html",
+            context={"cards": [], "current_user": None, "guest": True}
+        )
+    if current_user.is_admin:
+        cards = session.exec(
+            select(Card).options(joinedload(Card.set).joinedload(Set.user))
+        ).all()
+    else:
+        cards = session.exec(
+            select(Card)
+            .join(Set).where(Set.user_id == current_user.id)
+            .options(joinedload(Card.set).joinedload(Set.user))
+        ).all()
+    
+    if q:
+        cards = [card for card in cards if q.lower() in card.front.lower()]
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="card.html",
+        context={"cards": cards, "current_user": current_user}
+    )
 
-# --- SOLO TRIVIA ROUTES ---
+@router.get("/add", response_class=HTMLResponse)
+async def get_add_card_form(request: Request, session: SessionDep = None,
+                            current_user: Optional[User] = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Login required to add cards")
+    
+    set = session.exec(select(Set).where(Set.user_id == current_user.id)).first()
+    if not set:
+        default_set = Set(name=f"{current_user.username}'s Default Set", user_id=current_user.id) 
+        session.add(default_set)
+        session.commit()
+        session.refresh(default_set)
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="card_manage.html",
+        context={"request": request, "current_user": current_user}
+    )
+
+@router.post("/add", response_class=RedirectResponse)
+async def add_card(
+    front: str = Form(...),
+    back: str = Form(...),
+    session: SessionDep = None,
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Login required to add cards")
+    
+    set = session.exec(select(Set).where(Set.user_id == current_user.id)).first()
+    if not set:
+        set = Set(name=f"{current_user.username}'s Default Set", user_id=current_user.id)
+        session.add(set)
+        session.commit()
+        session.refresh(set)
+    
+    card = Card(front=front, back=back, set_id=set.id)
+    session.add(card)
+    session.commit()
+    session.refresh(card)
+    return RedirectResponse(url="/cards", status_code=303)
+
+@router.get("/{card_id}", response_class=HTMLResponse, name="get_card")
+async def get_card_by_id(request: Request, card_id: int, session: SessionDep = None,
+                         current_user: Optional[User] = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Login required to view cards")
+    
+    card = session.exec(
+        select(Card)
+        .where(Card.id == card_id)
+        .options(joinedload(Card.set).joinedload(Set.user))
+    ).first()
+
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    if not current_user.is_admin and card.set.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to card")
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="card.html",
+        context={"card": card, "current_user": current_user}
+    )
+
+@router.get("/{card_id}/edit", response_class=HTMLResponse)
+async def get_edit_card_form(request: Request, card_id: int, session: SessionDep = None,
+                            current_user: Optional[User] = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Login required to edit cards")
+    
+    card = session.exec(
+        select(Card)
+        .where(Card.id == card_id)
+        .options(joinedload(Card.set).joinedload(Set.user))
+    ).first()
+
+    if not card:
+         raise HTTPException(status_code=404, detail="Card not found")
+        
+    if not current_user.is_admin and card.set.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to card")
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="card_edit.html",
+        context={"card": card, "current_user": current_user}
+    )
+
+@router.post("/{card_id}/edit", response_class=RedirectResponse)
+async def edit_card(
+    card_id: int,
+    front: str = Form(...),
+    back: str = Form(...),
+    session: SessionDep = None,
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Login required to edit cards")
+    
+    card = session.exec(
+        select(Card)
+        .where(Card.id == card_id)
+        .options(joinedload(Card.set))
+    ).first()
+
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    if not current_user.is_admin and card.set.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to card")
+    
+    card.front = front
+    card.back = back
+    session.add(card)
+    session.commit()
+    # FIX 1: Redirect back to the edit page to show the updated values
+    return RedirectResponse(url=f"/cards/{card_id}/edit", status_code=303)
+
+
+@router.post("/{card_id}/delete", response_class=RedirectResponse)
+async def delete_card(
+    card_id: int,
+    session: SessionDep = None,
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Login required to delete cards")
+
+    card = session.exec(
+        select(Card)
+        .where(Card.id == card_id)
+        .options(joinedload(Card.set))
+    ).first()
+
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    if not current_user.is_admin and card.set.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to card")
+    
+    session.delete(card)
+    session.commit()
+    # FIX 2: Redirect back to the main cards list after successful deletion
+    return RedirectResponse(url="/cards", status_code=303)
+
 
 @router.get("/playtriv", response_class=HTMLResponse)
 async def play_triv_setup(
@@ -168,7 +332,6 @@ async def play_triv_setup(
     status: Optional[str] = Query(None),
     game_id: Optional[str] = Query(None)
 ):
-    """Handles the initial solo setup form or final finished state."""
     if not current_user:
         raise HTTPException(status_code=403, detail="Not logged in.")
         
@@ -214,8 +377,6 @@ async def start_solo_game(
         new_game = create_new_game(session, current_user, set_id, num_questions, is_solo=True)
         new_game.current_card_index = 0
         
-        # FIX: Ensure state is explicitly set to IN_PROGRESS here as well, 
-        # though it should be set in create_new_game. This is for robustness.
         new_game.state = "IN_PROGRESS"
         
         return RedirectResponse(url=f"/cards/playtriv/in_progress/{new_game.game_id}", status_code=303)
@@ -239,7 +400,6 @@ async def solo_game_in_progress(
     if not game or game.creator_id != current_user.id or not game.is_solo:
         raise HTTPException(status_code=404, detail="Solo game not found or unauthorized.")
     
-    # FIX: If the game is already FINISHED, redirect the user back to the finished screen
     if game.state == "FINISHED":
         return RedirectResponse(url=f"/cards/playtriv?status=finished&game_id={game_id}", status_code=303)
         
@@ -265,7 +425,6 @@ async def solo_game_submit_answer(
     session: SessionDep = None,
     current_user: Optional[User] = Depends(get_current_user)
 ):
-    """Handles the submission and grading of a solo answer, and updates the game score."""
     if not current_user:
         raise HTTPException(status_code=403, detail="Not logged in.")
 
@@ -277,26 +436,19 @@ async def solo_game_submit_answer(
         
     game = active_games.get(game_id)
     
-    # Validation/Authorization check
     if not game or game.creator_id != current_user.id or not game.is_solo:
-        # Returning 404/403/400 generic error is fine, the client handles the redirect
         return JSONResponse(content={"status": "error", "message": "Game state is invalid or unauthorized."}, status_code=404)
     
-    # State check (critical for the bug fix)
     if game.state != "IN_PROGRESS":
-        # Returns specific message if the game is found but finished (or waiting)
         return JSONResponse(content={"status": "error", "message": "The game is not in progress."}, status_code=400)
     
-    # --- Robust Core Logic Execution ---
     try:
         current_card = get_current_card(session, game)
         if not current_card:
-            # If card is unexpectedly missing (corrupted state)
             return JSONResponse(content={"status": "error", "message": "The current question data is corrupted."}, status_code=400)
             
         result = grade_answer(user_answer, current_card.back)
         
-        # --- Update Solo Score ---
         POINTS_CORRECT = 5.0
         POINTS_HALF = 2.5
         
@@ -308,7 +460,6 @@ async def solo_game_submit_answer(
         return {"status": "success", "result": result, "correct_answer": current_card.back}
 
     except Exception as e:
-        # Catch internal errors (DB issues, session problems) and return a clear error
         print(f"Internal error during solo answer submission: {e}")
         return JSONResponse(content={"status": "error", "message": "An internal error prevented grading the answer. Check server logs."}, status_code=500)
 
@@ -319,7 +470,6 @@ async def solo_game_next_card(
     session: SessionDep = None,
     current_user: Optional[User] = Depends(get_current_user)
 ):
-    """Handles the request for the next card in a solo game."""
     if not current_user:
         raise HTTPException(status_code=403, detail="Not logged in.")
 
@@ -334,14 +484,12 @@ async def solo_game_next_card(
     if not game or game.creator_id != current_user.id or not game.is_solo:
         raise HTTPException(status_code=404, detail="Solo game state error or unauthorized.")
         
-    # FIX: Prevent processing if the game is already finished (race condition check)
     if game.state == "FINISHED":
         return {"status": "finished", "message": "Game completed (already finished)."}
 
     next_index = current_index + 1
     
     if next_index >= len(game.card_ids):
-        # Game finished
         game.state = "FINISHED"
         return {"status": "finished", "message": "Game completed."}
 
@@ -355,14 +503,10 @@ async def solo_game_next_card(
             "card_index": next_index
         }
     else:
-        # Fallback if card is missing after index increment
         game.state = "FINISHED"
         return {"status": "error", "message": "Failed to retrieve next card data."}
 
 
-# --- MULTIPLAYER ROUTES (REMAINS THE SAME) ---
-# [ ... OMITTED MULTIPLAYER ROUTES FOR BREVITY, NO CHANGES REQUIRED HERE ... ]
-# (All code from L. 433 onwards in the original file is unchanged.)
 @router.get("/playwithfriends", response_class=HTMLResponse)
 @router.get("/playwithfriends/{game_id}", response_class=HTMLResponse)
 async def play_game(
@@ -543,7 +687,6 @@ async def end_game(
     return RedirectResponse(url=f"/cards/playwithfriends/{game_id}", status_code=303)
 
 
-# --- WEB SOCKET ENDPOINT (REMAINS THE SAME) ---
 @router.websocket("/ws/{game_id}/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str, session: SessionDep):
     if game_id not in active_games:

@@ -21,8 +21,8 @@
                     {% if current_user.is_admin %}
                         <p class="admin-note">Owner: {{ card.set.user.username }}</p>
                     {% endif %}
-                    <a href="/card/{{ card.id }}" class="btn">View Details</a>
-                    <a href="/card/{{ card.id }}/edit" class="btn">Edit</a>
+                    <a href="/cards/{{ card.id }}" class="btn">View Details</a>
+                    <a href="/cards/{{ card.id }}/edit" class="btn">Edit</a>
                 </div>
             {% endfor %}
         </div>

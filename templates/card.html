@@ -19,10 +19,16 @@
                     <h3>Question: {{ card.front }}</h3>
                     <p class="answer">{{ card.back }}</p>
                     {% if current_user.is_admin %}
-                        <p class="admin-note">Owner: {{ card.set.user.username }}</p>
+                        <p class="admin-note">Owner: 
+                            {% if card.set and card.set.user %}
+                                {{ card.set.user.username }}
+                            {% else %}
+                                [User/Set Missing]
+                            {% endif %}
+                        </p>
                     {% endif %}
-                    <a href="/card/{{ card.id }}" class="btn">View Details</a>
-                    <a href="/card/{{ card.id }}/edit" class="btn">Edit</a>
+                    <a href="/cards/{{ card.id }}" class="btn">View Details</a>
+                    <a href="/cards/{{ card.id }}/edit" class="btn">Edit</a>
                 </div>
             {% endfor %}
         </div>
