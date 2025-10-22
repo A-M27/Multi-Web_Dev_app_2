@@ -77,8 +77,6 @@ def create_new_game(session: Session, current_user: User, set_id: int, num_quest
     if not selected_set:
         raise HTTPException(status_code=400, detail="Invalid card set selected.")
     
-    # FIX: Select full Card objects to ensure they exist before getting IDs
-    # Then map to IDs for the game.card_ids list.
     existing_cards = session.exec(select(Card).where(Card.set_id == set_id)).all()
     cards_in_set = [card.id for card in existing_cards]
 
@@ -87,7 +85,6 @@ def create_new_game(session: Session, current_user: User, set_id: int, num_quest
 
     num_questions = min(num_questions, len(cards_in_set))
     
-    # Randomly select IDs of existing cards
     selected_card_ids = random.sample(cards_in_set, k=num_questions)
 
     new_game = LiveGame(
@@ -108,18 +105,13 @@ def create_new_game(session: Session, current_user: User, set_id: int, num_quest
 def get_current_card(session: Session, game: LiveGame) -> Optional[Card]:
     if 0 <= game.current_card_index < len(game.card_ids):
         card_id = game.card_ids[game.current_card_index]
-        # FIX: Ensure card actually exists in DB (handles cards deleted mid-game setup/before game starts)
         card = session.exec(select(Card).where(Card.id == card_id)).first()
         
-        # If the card was deleted, move to the next index and recursively call
         if not card:
-            # Check if there are remaining card IDs to use
             if game.current_card_index + 1 < len(game.card_ids):
-                # Safely discard the deleted card ID by advancing the index
                 game.current_card_index += 1
                 return get_current_card(session, game)
             else:
-                # No cards left to use
                 return None
         
         return card
@@ -151,6 +143,9 @@ def update_score_board(game_id: str, username: str, result: str):
     POINTS_CORRECT = 5.0
     POINTS_HALF = 2.5
     
+    if game_id not in score_boards:
+        score_boards[game_id] = {}
+        
     board = score_boards[game_id]
     
     if username not in board:
@@ -225,8 +220,6 @@ async def start_solo_game(
         new_game = create_new_game(session, current_user, set_id, num_questions, is_solo=True)
         new_game.current_card_index = 0
         
-        new_game.state = "IN_PROGRESS"
-        
         return RedirectResponse(url=f"/cards/playtriv/in_progress/{new_game.game_id}", status_code=303)
     except HTTPException as e:
         raise e
@@ -253,7 +246,6 @@ async def solo_game_in_progress(
         
     current_card = get_current_card(session, game)
     
-    # Handle the case where the starting card was deleted and the game could not find a replacement
     if not current_card and game.current_card_index >= len(game.card_ids):
         game.state = "FINISHED"
         return RedirectResponse(url=f"/cards/playtriv?status=finished&game_id={game_id}", status_code=303)
@@ -297,10 +289,8 @@ async def solo_game_submit_answer(
         return JSONResponse(content={"status": "error", "message": "The game is not in progress."}, status_code=400)
     
     try:
-        # NOTE: get_current_card may advance the index if the card is deleted.
         current_card = get_current_card(session, game)
         if not current_card:
-            # This should only happen if the card was deleted mid-answer or the list is exhausted
             game.state = "FINISHED"
             return JSONResponse(content={"status": "finished"}, status_code=200)
 
@@ -345,19 +335,15 @@ async def solo_game_next_card(
     if game.state == "FINISHED":
         return {"status": "finished", "message": "Game completed (already finished)."}
 
-    # Increment index first, then check if it's past the list end
     next_index = current_index + 1
     game.current_card_index = next_index
 
-    # Check for game end before attempting to load a card
     if next_index >= len(game.card_ids):
         game.state = "FINISHED"
         return {"status": "finished", "message": "Game completed."}
 
-    # Use the robust get_current_card function to skip deleted IDs
     next_card = get_current_card(session, game)
     
-    # After recursive calls inside get_current_card, re-check for game end state
     if game.current_card_index >= len(game.card_ids) or not next_card:
         game.state = "FINISHED"
         return {"status": "finished", "message": "Game completed after skipping deleted cards."}
@@ -367,10 +353,9 @@ async def solo_game_next_card(
         return {
             "status": "success",
             "card": {"front": next_card.front, "back": next_card.back},
-            "card_index": game.current_card_index # Use the index potentially adjusted by get_current_card
+            "card_index": game.current_card_index
         }
     else:
-        # Fallback if logic failed to find a card
         game.state = "FINISHED"
         return {"status": "finished", "message": "Game completed after skipping deleted cards."}
 
@@ -409,7 +394,6 @@ async def play_game(
         if not is_player:
              game.players[current_user.username] = current_user.username
              
-        # Use robust get_current_card
         initial_card = get_current_card(session, game)
         
         if game.state == "WAITING":
@@ -519,11 +503,9 @@ async def start_game(
     game.state = "IN_PROGRESS"
     game.current_card_index = 0
     
-    # Use robust get_current_card to find the first existing card
     first_card = get_current_card(session, game)
     
     if not first_card:
-        # If no cards remain after skipping deleted ones, end the game immediately
         game.state = "FINISHED"
         raise HTTPException(status_code=400, detail="The set is empty or all starting cards were deleted.")
 
@@ -568,15 +550,14 @@ async def end_game(
     return RedirectResponse(url=f"/cards/playwithfriends/{game_id}", status_code=303)
 
 
-# --- WEB SOCKET ENDPOINT (UNCHANGED) ---
-
+# --- WEB SOCKET ENDPOINT ---
 @router.websocket("/ws/{game_id}/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str, session: SessionDep):
     if game_id not in active_games:
         await websocket.close(code=1008, reason="Game not found.")
         return
         
-    game = active_games[game_id]
+    game = active_games.get(game_id)
     current_user = session.exec(select(User).where(User.username == client_id)).first()
 
     if not current_user or current_user.username not in game.players:
@@ -612,18 +593,28 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str,
                 
                 payload = data.get('payload', {})
                 answer = payload.get('answer', '').strip()
+                viewed_answer = payload.get('viewed_answer', False) # Check for zero score flag
+                
                 current_card = get_current_card(session, game)
                 
-                if not answer or not current_card:
+                # Check for bad input (no text answer AND no view flag) or missing card
+                if not current_card or (not answer and not viewed_answer):
                     continue
 
-                result = grade_answer(answer, current_card.back)
+                # --- FIX 1: Implement Zero Score Logic ---
+                if viewed_answer:
+                    result = 'wrong'
+                    display_answer = "[ANSWER REVEALED] - Score: 0"
+                else:
+                    result = grade_answer(answer, current_card.back)
+                    display_answer = answer
+                
                 update_score_board(game_id, client_id, result)
                 
                 answer_data = {
                     "type": "answer_result",
                     "sender": client_id,
-                    "answer": answer,
+                    "answer": display_answer,
                     "result": result,
                     "scores": score_boards[game_id],
                     "initials": client_id[0].upper(),
@@ -642,14 +633,19 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str,
                     continue
                     
                 if command == 'request_next_card':
+                    # Increment index
                     game.current_card_index += 1
                     
+                    # Check for hard end of list
                     if game.current_card_index >= len(game.card_ids):
                          game.state = "FINISHED"
                          await manager.broadcast({"type": "game_end", "message": f"Game **{game.set_name}** complete! Check the final leaderboard."}, game_id)
                          continue
                          
+                    # Use get_current_card (which may advance index if the card is deleted)
                     next_card = get_current_card(session, game)
+                    
+                    # --- FIX 2: Handle game end after skipping deleted cards gracefully ---
                     if next_card:
                         card_data = {
                             "type": "new_card",
@@ -659,6 +655,10 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str,
                             "total_questions": len(game.card_ids)
                         }
                         await manager.broadcast(card_data, game_id)
+                    else:
+                        # If next_card is None, it means we hit the end of the list after skipping deleted ones.
+                        game.state = "FINISHED"
+                        await manager.broadcast({"type": "game_end", "message": f"Game **{game.set_name}** complete! All remaining cards were deleted or list exhausted."}, game_id)
                         
             elif message_type == 'score_request':
                 score_data = {
@@ -681,9 +681,8 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str,
 
 
 # ----------------------------------------------------------------------
-# --- CARD MANAGEMENT ROUTES (MUST COME AFTER SPECIFIC GAME ROUTES) ---
+# --- CARD MANAGEMENT ROUTES (REST OF ROUTES OMITTED FOR BREVITY) ---
 # ----------------------------------------------------------------------
-
 @router.get("/", response_class=HTMLResponse)
 async def get_cards(request: Request, session: SessionDep = None, 
                     q: Optional[str] = None, current_user: Optional[User] = Depends(get_current_user)):

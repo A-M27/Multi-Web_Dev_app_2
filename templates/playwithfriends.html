@@ -17,7 +17,7 @@
             {% if game_state == "not_found" %}
                 <div class="main-content-column" style="text-align: center;">
                     <h2>Game Not Found 😔</h2>
-                    <p>The game ID **{{ game_id }}** does not exist or is no longer active.</p>
+                    <p>The game {{ game_id }} has been closed due to server errors or game creator left</p>
                     <p>Please <a href="/cards/playwithfriends" class="btn">Create or Join a New Game</a>.</p>
                 </div>
             
@@ -62,11 +62,11 @@
             {% elif game_state == "waiting_to_start" %}
                 <div class="main-content-column" style="text-align: center; max-width: 800px; margin: 0 auto;">
                     <h2>Waiting to Start Game: {{ set_name }}</h2>
-                    <p>This is a **{{ set_name }}** game.</p>
+                    <p>This is a {{ set_name }} game.</p>
                     
                     {# Game ID visibility: Only the creator sees the ID clearly #}
                     {% if is_creator %}
-                        <p>Share this **Game ID** with your friends to join:</p>
+                        <p>Share this Game Code with your friends to join:</p>
                         <div style="margin: 10px auto; max-width: 400px; padding: 15px; border: 2px dashed #dc3545; background-color: #fff0f0;">
                             <p style="font-size: 1.5em; font-weight: bold; color: #dc3545;">{{ game_id }}</p>
                         </div>
@@ -220,7 +220,6 @@
         const userName = "{{ current_user.username }}";
         const gameId = "{{ game_id }}";
         const isCreator = {{ "true" if is_creator else "false" }};
-
 
         // WebSocket connection is needed for WAITING, IN_PROGRESS, and FINISHED states
         const ws = new WebSocket(`ws://{{ request.url.netloc }}/cards/ws/${gameId}/${userName}`);
@@ -467,6 +466,15 @@
                      cardDisplayArea.style.backgroundColor = '#f0fff0'; 
                      setTimeout(() => { cardDisplayArea.style.backgroundColor = ''; }, 300);
                  } else if (data.type === 'answer_result') {
+                     
+                     // --- START FIX ---
+                     const resultText = data.result.toUpperCase();
+                     // Add the player's answer to the answer chat history
+                     appendChatMessage(data.sender, 
+                                       ` "${data.answer}".  ${resultText}`, 
+                                       'answer');
+                     // --- END FIX ---
+
                      updateScoreboardPills(data.scores, data.sender, data.result);
                      if (data.sender === userName) {
                          hasAnsweredCurrentCard = true;
@@ -486,48 +494,48 @@
                  }
             });
             showAnswerBtn.addEventListener('click', function() {
-                if (!currentCardData.front) { return; }
-                if (!isFlipped) {
-                    cardFrontText.textContent = currentCardData.back;
-                    cardContentContainer.style.fontSize = '1.2em';
-                    showAnswerBtn.textContent = 'Back to Question';
-                    isFlipped = true;
-                } else {
-                    cardFrontText.textContent = currentCardData.front;
-                    cardContentContainer.style.fontSize = '1.5em';
-                    showAnswerBtn.textContent = 'Answer';
-                    isFlipped = false;
-                }
+                 if (!currentCardData.front) { return; }
+                 if (!isFlipped) {
+                     cardFrontText.textContent = currentCardData.back;
+                     cardContentContainer.style.fontSize = '1.2em';
+                     showAnswerBtn.textContent = 'Back to Question';
+                     isFlipped = true;
+                 } else {
+                     cardFrontText.textContent = currentCardData.front;
+                     cardContentContainer.style.fontSize = '1.5em';
+                     showAnswerBtn.textContent = 'Answer';
+                     isFlipped = false;
+                 }
             });
             document.getElementById('nextCardBtn')?.addEventListener('click', function() {
-                const data = { type: "game_control", payload: { command: "request_next_card" } };
-                ws.send(JSON.stringify(data));
+                 const data = { type: "game_control", payload: { command: "request_next_card" } };
+                 ws.send(JSON.stringify(data));
             });
             chatForm.addEventListener('submit', async function(event) {
-                event.preventDefault();
-                const message = messageInput.value.trim();
-                if (!message || currentSidebarView === 'leaderboard') return;
+                 event.preventDefault();
+                 const message = messageInput.value.trim();
+                 if (!message || currentSidebarView === 'leaderboard') return;
 
-                if (currentChatMode === 'answer') {
-                    if (hasAnsweredCurrentCard) {
-                        appendChatMessage("INFO", "You have already submitted an answer for this question.", 'answer');
-                        messageInput.value = '';
-                        return;
-                    }
-                    const data = { type: "answer_submission", payload: { answer: message } };
-                    ws.send(JSON.stringify(data));
-                } else {
-                    const data = { type: "chat", payload: { message: message } };
-                    ws.send(JSON.stringify(data));
-                    messageInput.value = ''; 
-                }
+                 if (currentChatMode === 'answer') {
+                     if (hasAnsweredCurrentCard) {
+                         appendChatMessage("INFO", "You have already submitted an answer for this question.", 'answer');
+                         messageInput.value = '';
+                         return;
+                     }
+                     const data = { type: "answer_submission", payload: { answer: message } };
+                     ws.send(JSON.stringify(data));
+                 } else {
+                     const data = { type: "chat", payload: { message: message } };
+                     ws.send(JSON.stringify(data));
+                     messageInput.value = ''; 
+                 }
             });
             
             // Set initial chat view
             ws.onopen = function() {
-                initializeChatHistory();
-                setSidebarView('chat');
-                ws.send(JSON.stringify({ type: 'score_request' }));
+                 initializeChatHistory();
+                 setSidebarView('chat');
+                 ws.send(JSON.stringify({ type: 'score_request' }));
             };
         {% endif %}
     {% endif %}
