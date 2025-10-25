@@ -28,11 +28,7 @@
     </form>
     {% endif %}
     <section>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
+        <br><br><br><br><br>
     </section>
     {% if users %}
     {% for user in users %}
@@ -49,9 +45,7 @@
             {% if current_user.is_admin and current_user.id != user.id %}
             <a href="/users/{{ user.id }}/edit">Edit</a>
            
-           <br>
-           <br>
-           <br>
+           <br><br><br>
            <form method="post"  class="btn" action="/users/{{ user.id }}/delete" style="display:inline;">
                 <button type="submit" class="btn" onclick="return confirm('Are you sure?')">Delete</button>
             </form>
@@ -66,18 +60,7 @@
     {% endif %}
 
     <section>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
+        <br><br><br><br><br><br><br><br><br><br><br><br>
     </section>
 </div>
 {% endblock %}

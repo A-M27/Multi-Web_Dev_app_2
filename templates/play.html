@@ -126,7 +126,6 @@
     const feedbackMessage = document.getElementById('feedback-message');
 
 
-    // Initial state variables loaded from Jinja context
     let currentCardIndex = {{ card_index }};
     const totalQuestions = {{ total_questions }};
     const gameId = "{{ game_id }}";
@@ -140,11 +139,9 @@
     };
     let isFlipped = false;
 
-    // Initially disable Next button until an answer is submitted/shown
     nextCardBtn.disabled = true;
 
 
-    // --- Helper function to reset for new question ---
     function resetCardState() {
         isAnswered = false;
         isFlipped = false;
@@ -162,12 +159,12 @@
         
         feedbackMessage.textContent = '';
         cardContentContainer.style.backgroundColor = 'transparent';
-        cardFrontText.textContent = currentCardData.front; // Ensure card is flipped back
+        cardFrontText.textContent = currentCardData.front;
         cardContentContainer.style.fontSize = '1.5em';
     }
 
 
-    // --- Card Flip Logic ---
+
     showAnswerBtn.addEventListener('click', function() {
         if (!currentCardData.front) return;
         
@@ -195,16 +192,13 @@
         }
     });
 
-    // --- Answer Submission Logic (FIXED: Handles server errors & displays correct answer) ---
     answerForm.addEventListener('submit', async function(event) {
         event.preventDefault();
-        // FIX: Check if the button is disabled to prevent rapid clicks/re-submission
         if (submitAnswerBtn.disabled || isAnswered || userAnswerInput.disabled) return;
         
         const answer = userAnswerInput.value.trim();
         if (!answer) return;
 
-        // Temporarily disable buttons before the fetch begins
         submitAnswerBtn.disabled = true;
         submitAnswerBtn.textContent = 'Checking...';
         showAnswerBtn.disabled = true;
@@ -220,15 +214,12 @@
 
             if (data.status === 'error') {
                 
-                // FIX: Check for "not in progress" error and force redirect
                 if (data.message.includes('not in progress') || response.status === 404 || response.status === 500) {
                     alert("Game session invalid or finished. Please start a new game.");
-                    // Use a full redirect to clear any residual state
                     window.location.href = '/cards/playtriv'; 
                     return; 
                 }
                 
-                // Re-enable buttons on other errors
                 feedbackMessage.textContent = data.message;
                 feedbackMessage.style.color = 'red';
                 submitAnswerBtn.textContent = 'Submit Answer';
@@ -237,17 +228,14 @@
                 return;
             }
             
-            // Store results from server
             isAnswered = true;
             submittedResult = data.result;
             correctCardAnswer = data.correct_answer;
             
-            // Update UI/State
-            // FIX: Only enable the Next Card button if we're NOT on the last question
             if (currentCardIndex < totalQuestions - 1) {
                 nextCardBtn.disabled = false;
             } else {
-                // If it's the last question, we still want to enable "Next" to trigger the finish logic
+ 
                 nextCardBtn.disabled = false;
                 nextCardBtn.textContent = 'Finish Game';
             }
@@ -266,7 +254,7 @@
                 feedbackMessage.textContent = `Result: HALF-CORRECT! (+2.5 points) Correct answer: ${correctCardAnswer}`;
                 feedbackMessage.style.color = 'orange';
                 cardContentContainer.style.backgroundColor = '#fffbe6';
-            } else { // WRONG
+            } else {
                 feedbackMessage.textContent = `Result: WRONG! (0 points) The correct answer was: ${correctCardAnswer}`;
                 feedbackMessage.style.color = 'red';
                 cardContentContainer.style.backgroundColor = '#ffe6e6';
@@ -284,7 +272,6 @@
     });
 
     
-    // --- Next Card Logic ---
     nextCardBtn.addEventListener('click', async function() {
         if (nextCardBtn.disabled) return;
         
@@ -305,7 +292,6 @@
                 window.location.href = `/cards/playtriv?status=finished&game_id=${gameId}`;
                 return;
             } else if (data.status === 'success' && data.card) {
-                // Update Card Data
                 currentCardIndex = data.card_index;
                 currentCardData.front = data.card.front;
                 currentCardData.back = data.card.back;
@@ -314,7 +300,6 @@
                 cardBackText.textContent = data.card.back;
                 cardContentContainer.style.fontSize = '1.5em'; 
                 
-                // Update question counter and reset state
                 questionNumberSpan.textContent = currentCardIndex + 1;
                 resetCardState();
 
@@ -326,26 +311,20 @@
             console.error('Network error during next card fetch:', error);
             alert('A network error occurred.');
         } finally {
-            // Re-enable in case of an error that didn't trigger a redirect
             if (currentCardIndex < totalQuestions - 1) {
                  nextCardBtn.textContent = 'Next Question';
             }
         }
     });
 
-    // End Game Button (REMAINS THE SAME)
     endGameBtn.addEventListener('click', function(event) {
         if (confirm('Are you sure you want to end this personal trivia game? You will return to the setup screen.')) {
-            // No need to call a POST endpoint, just clear the game on the client side 
-            // and the server will eventually time it out/clean it up. 
-            // The redirection is enough to "end" the user's session.
             window.location.href = '/cards/playtriv';
         }
         event.preventDefault();
     });
 
     {% elif game_state == "finished" %}
-        // Final score logic is now handled in the Jinja template using passed context
     {% endif %}
 </script>
 {% endblock %}

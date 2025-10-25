@@ -122,7 +122,7 @@
     const isCreator = {{ "true" if is_creator else "false" }};
     const ws = new WebSocket(`ws://{{ request.url.netloc }}/games/ws/${gameId}/${userName}`);
 
-    // --- DOM Elements ---
+ 
     const messageInput = document.getElementById('messageText');
     const chatForm = document.getElementById('chat-form');
     const showAnswerBtn = document.getElementById('showAnswerBtn');
@@ -135,18 +135,18 @@
     const leaderboardList = document.getElementById('leaderboard-list');
     const gameStatusHeader = document.getElementById('game-status-header');
     
-    // View/Mode elements
+
     const chatView = document.getElementById('chat-view');
     const leaderboardView = document.getElementById('leaderboard-view');
 
-    // Chat mode buttons/histories
+
     const modeAnswerBtn = document.getElementById('mode-answer');
     const modeFriendsBtn = document.getElementById('mode-friends');
     const modeLeaderboardBtn = document.getElementById('mode-leaderboard'); 
     const historyAnswer = document.getElementById('chat-history-answer');
     const historyFriends = document.getElementById('chat-history-friends');
     
-    // Scoreboard elements
+
     const scoreCorrect = document.getElementById('user-score-correct');
     const scoreHalf = document.getElementById('user-score-half');
     const scoreWrong = document.getElementById('user-score-wrong');
@@ -154,7 +154,7 @@
     const initialsHalf = document.getElementById('initials-half');
     const initialsWrong = document.getElementById('initials-wrong');
 
-    // --- State Variables ---
+
     let currentCardData = {
         front: cardFrontText ? cardFrontText.textContent.trim() : '',
         back: cardBackText ? cardBackText.textContent.trim() : ''
@@ -163,13 +163,13 @@
     let hasAnsweredCurrentCard = false; 
     let currentChatMode = 'answer'; 
     let currentSidebarView = 'chat'; 
-    let currentGameState = "{{ game.status }}"; // LOBBY, ACTIVE, FINISHED
+    let currentGameState = "{{ game.status }}";
     let currentQuestionNumber = {{ game.current_question_count }};
     let maxQuestions = {{ game.max_questions }};
 
     if(cardContentContainer) cardContentContainer.style.fontSize = '1.5em';
 
-    // Helper functions (omitted for brevity, assume they are the same as the final version you accepted, including appendChatMessage, createInitialsIcon, resetScoreboardInitials, updateScoreboardPills, and renderLeaderboard)
+
     function appendChatMessage(sender, text, mode) {
         let historyContainer = (mode === 'answer') ? historyAnswer : historyFriends;
         let messageList = historyContainer.querySelector('ul');
@@ -336,7 +336,7 @@
                 gameControlButton.textContent = "Start Game";
                 gameControlButton.disabled = false;
             }
-            // Clear past question state
+
             hasAnsweredCurrentCard = false; 
             resetScoreboardInitials();
         } else if (currentGameState === 'ACTIVE') {
@@ -357,17 +357,14 @@
                 gameControlButton.textContent = "Game Finished";
                 gameControlButton.disabled = true;
             }
-            // Automatically switch to leaderboard on finish
             modeLeaderboardBtn.click();
         }
     }
     
-    // Initial display setup
     document.addEventListener('DOMContentLoaded', () => {
         updateGameDisplay();
     });
 
-    // --- Event Listeners ---
     modeAnswerBtn.addEventListener('click', () => setChatMode('answer'));
     modeFriendsBtn.addEventListener('click', () => setChatMode('friends'));
     
@@ -390,7 +387,6 @@
         });
     }
 
-    // --- WebSocket Event Handlers ---
     ws.onmessage = function(event) {
         let data;
         try {
@@ -470,7 +466,6 @@
     };
 
 
-    // --- Form Submission (Unified Chat/Answer) ---
     chatForm.addEventListener('submit', async function(event) {
         event.preventDefault();
         const message = messageInput.value.trim();
@@ -491,16 +486,14 @@
             const data = { type: "answer_submission", payload: { answer: message } };
             ws.send(JSON.stringify(data));
             
-        } else { // currentChatMode === 'friends'
+        } else {
             const data = { type: "chat", payload: { message: message, mode: 'friends' } };
             ws.send(JSON.stringify(data));
             messageInput.value = ''; 
         }
     });
 
-    // 3. Show Answer Button (Flip Logic)
     showAnswerBtn.addEventListener('click', function() {
-        // ... (Flip logic as before)
          if (!currentCardData.front) {
              console.log("No card loaded.");
              return;

@@ -5,7 +5,6 @@ from sqlmodel import select, Session
 from ..db.session import get_session
 from ..db.models import Card, Set, User
 from ..auth import get_current_user
-# REMOVED: from ..routes.cards import get_random_card # This caused the circular import
 import random
 import json
 import re
@@ -14,7 +13,7 @@ from typing import Optional, List, Annotated, Dict
 from fastapi import WebSocket, WebSocketDisconnect, Query 
 from pathlib import Path
 
-# --- Game State Definitions ---
+
 
 class PlayerScore(dict):
     """Stores a single player's score and statistics."""
@@ -28,18 +27,18 @@ class GameState:
         self.creator_username = creator_username
         self.set_id = set_id
         self.max_questions = max_questions
-        self.max_time = max_time # Time limit per question (seconds)
-        self.status = "LOBBY" # LOBBY, ACTIVE, FINISHED
+        self.max_time = max_time
+        self.status = "LOBBY" 
         self.current_question_count = 0
         self.current_card: Optional[Card] = None
-        # {username: PlayerScore}
+ 
         self.score_board: Dict[str, PlayerScore] = {creator_username: PlayerScore()}
-        # {username: bool} - Tracks if a user has answered the current card
+
         self.answered_users: Dict[str, bool] = {}
-        # {username: WebSocket}
+
         self.active_connections: Dict[str, WebSocket] = {}
 
-# Stores all active games: {game_id: GameState}
+
 ACTIVE_GAMES: Dict[str, GameState] = {} 
 
 router = APIRouter(prefix="/games")
@@ -47,7 +46,6 @@ templates = Jinja2Templates(directory="templates")
 SessionDep = Annotated[Session, Depends(get_session)] 
 
 
-# --- Card Helper Function (Moved from cards.py to break circular dependency) ---
 
 def get_random_card_from_set(session: Session, set_id: int) -> Optional[Card]:
     """Fetches a random card from a specific set."""
@@ -57,7 +55,7 @@ def get_random_card_from_set(session: Session, set_id: int) -> Optional[Card]:
     return None
 
 
-# --- GRADING HELPER FUNCTIONS ---
+
 
 def normalize_text(text: str) -> str:
     """Removes capitalization, extra spaces, and basic punctuation for flexible comparison."""
@@ -109,39 +107,39 @@ def update_game_score(game: GameState, username: str, result: str):
     
     return game.score_board[username]
 
-# --- Connection Management (Per Game) ---
+
 
 async def broadcast_game_message(game: GameState, message: dict):
     """Sends a JSON message to all active connections in a specific game."""
-    # Create a list of connections to send to, to avoid issues if one disconnects mid-loop
+
     connections_to_send = list(game.active_connections.values())
     for ws in connections_to_send:
         try:
             await ws.send_json(message)
         except Exception:
-            # Note: The disconnection logic should primarily be in the WebSocketDisconnect handler
+
             pass
 
 
-# --- API Routes ---
+
 
 @router.get("/playwithfriends", response_class=HTMLResponse) 
 async def play_game_lobby(request:Request, 
                          session: SessionDep,
                          current_user: User = Depends(get_current_user)):
     
-    # Check if the user is actually logged in
+
     if not current_user:
         raise HTTPException(status_code=403, detail="User not logged in.")
     
-    # Fetch available card sets for game creation
+
     sets = session.exec(select(Set)).all()
-    # Filter out sets with 0 cards to ensure a game can be played
+
     sets = [s for s in sets if s.cards] 
 
     return templates.TemplateResponse(
         request=request, 
-        name="playwithfriends.html", # Initial transitional view
+        name="playwithfriends.html",
         context={"current_user": current_user, "sets": sets, "game_id": None}
     )
 
@@ -149,7 +147,7 @@ async def play_game_lobby(request:Request,
 async def create_game(current_user: User = Depends(get_current_user),
                       set_id: int = Form(...),
                       max_questions: int = Form(10),
-                      session: SessionDep): # FIX: Correct dependency syntax
+                      session: SessionDep): #
     
     if not current_user:
         raise HTTPException(status_code=403, detail="User not logged in.")
@@ -158,14 +156,14 @@ async def create_game(current_user: User = Depends(get_current_user),
     if not game_set:
         raise HTTPException(status_code=400, detail="Invalid card set selected.")
     
-    # Check if the set has any cards
+
     if not game_set.cards:
         raise HTTPException(status_code=400, detail="Selected card set has no cards.")
     
-    # Ensure max_questions doesn't exceed available cards or is a reasonable number
+
     max_questions = min(max_questions, len(game_set.cards), 50)
     
-    # Create the new GameState
+
     new_game = GameState(
         creator_id=current_user.id,
         creator_username=current_user.username,
@@ -173,10 +171,10 @@ async def create_game(current_user: User = Depends(get_current_user),
         max_questions=max_questions
     )
     
-    # Add to global active games
+
     ACTIVE_GAMES[new_game.game_id] = new_game
     
-    # Redirect to the game lobby page
+
     return RedirectResponse(url=f"/games/playwithfriends/{new_game.game_id}", status_code=303)
 
 
@@ -184,13 +182,13 @@ async def create_game(current_user: User = Depends(get_current_user),
 async def join_game_page(request: Request,
                          game_id: str,
                          current_user: User = Depends(get_current_user),
-                         session: SessionDep): # FIX: Correct dependency syntax
+                         session: SessionDep):
     
-    # 1. Check if the user is actually logged in
+
     if not current_user:
         raise HTTPException(status_code=403, detail="User not logged in.")
     
-    # 2. Check for game verification code and authorization
+
     game = ACTIVE_GAMES.get(game_id)
     
     if not game:
@@ -199,40 +197,40 @@ async def join_game_page(request: Request,
     is_creator = (current_user.username == game.creator_username)
     is_player = (current_user.username in game.score_board)
     
-    # If the user is neither the creator nor an existing player, add them to the scoreboard
+
     if not is_creator and not is_player:
         game.score_board[current_user.username] = PlayerScore()
 
-    # Pass the initial state to the new game template
+
     return templates.TemplateResponse(
         request=request,
-        name="playwithfriends_game.html", # Actual game interface
+        name="playwithfriends_game.html",
         context={
             "current_user": current_user, 
             "game": game,
             "is_creator": is_creator,
             "game_id": game_id,
-            "card": game.current_card # Will be None if in LOBBY
+            "card": game.current_card 
         }
     )
 
-# --- WEB SOCKET ENDPOINT (Per Game) ---
+
 
 @router.websocket("/ws/{game_id}/{username}")
-async def websocket_endpoint(websocket: WebSocket, game_id: str, username: str, session: SessionDep): # FIX: Correct dependency syntax
+async def websocket_endpoint(websocket: WebSocket, game_id: str, username: str, session: SessionDep): 
     
     game = ACTIVE_GAMES.get(game_id)
     
-    # Pre-connection authorization check
+
     if not game or username not in game.score_board:
         await websocket.close(code=1008, reason="Game ID or user authorization failed.")
         return
 
-    # Add connection to the game state
+
     await websocket.accept()
     game.active_connections[username] = websocket
     
-    # Notify lobby that a player joined
+
     await broadcast_game_message(game, {
         "type": "chat_message",
         "sender": "SYSTEM",
@@ -264,7 +262,7 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, username: str, 
                 answer = payload.get('answer', '').strip()
                 
                 if game.status != "ACTIVE" or game.answered_users.get(username):
-                    continue # Ignore answer if game is not active or user already answered
+                    continue
 
                 result = grade_answer(answer, game.current_card.back)
                 update_game_score(game, username, result)
@@ -285,11 +283,11 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, username: str, 
                 command = payload.get('command')
                 
                 if command == 'start_game' and game.status == "LOBBY":
-                    # Start the game and move to the first question
+
                     game.status = "ACTIVE"
                     await broadcast_game_message(game, {"type": "game_status_update", "status": "ACTIVE", "message": "Game starting!"})
                     
-                    # Fall through to 'request_next_card' to load Q1
+  
                     command = 'request_next_card' 
 
                 if command == 'request_next_card' and game.status == "ACTIVE":
@@ -297,13 +295,13 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, username: str, 
                     if game.current_question_count >= game.max_questions:
                         game.status = "FINISHED"
                         await broadcast_game_message(game, {"type": "game_status_update", "status": "FINISHED", "message": "Game finished! Displaying final leaderboard."})
-                        continue # Exit card fetching logic
+                        continue
                     
-                    # 1. Reset state for new question
+
                     game.answered_users = {}
                     game.current_question_count += 1
                     
-                    # 2. Fetch the next card from the correct set
+
                     next_card = get_random_card_from_set(session, game.set_id)
                     
                     if next_card:

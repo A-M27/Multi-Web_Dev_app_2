@@ -15,14 +15,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let desktopQuery;
 
-    // Close all submenus
+  
     function closeAllSubmenus() {
         document.querySelectorAll('.submenu-content').forEach(sub => {
             sub.classList.remove('show');
         });
     }
 
-    // Update media query to match current screen (50% width)
+
     function updateMediaQuery() {
         const halfScreenWidth = window.screen.width / 2;
         if (desktopQuery) {
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
         handleDesktopChange(desktopQuery);
     }
 
-    // Handle switching between mobile and desktop
+
     function handleDesktopChange(e) {
         if (e.matches) {
             mainMenuContent.classList.remove('show');
@@ -42,20 +42,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Initialize media query
+
     updateMediaQuery();
 
-    // Recalculate on window resize
+
     window.addEventListener('resize', updateMediaQuery);
 
-    // Toggle menu on mobile
+
     if (menuToggleBtn && mainMenuContent) {
         menuToggleBtn.addEventListener('click', function () {
             mainMenuContent.classList.toggle('show');
         });
     }
 
-    // Toggle submenus on mobile
+
     submenuLinks.forEach(link => {
         link.addEventListener('click', function (event) {
             const submenu = link.nextElementSibling;
@@ -69,4 +69,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
 

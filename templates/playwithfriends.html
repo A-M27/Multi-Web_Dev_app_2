@@ -221,12 +221,9 @@
         const gameId = "{{ game_id }}";
         const isCreator = {{ "true" if is_creator else "false" }};
 
-        // WebSocket connection is needed for WAITING, IN_PROGRESS, and FINISHED states
         const ws = new WebSocket(`ws://{{ request.url.netloc }}/cards/ws/${gameId}/${userName}`);
         
-        // Define common helper functions (must be available in all JS scopes)
 
-        // Only define these if we are in an IN_PROGRESS or FINISHED state to avoid DOM errors in WAITING state
         {% if game_state == "in_progress" or game_state == "finished" %}
             const leaderboardList = document.getElementById('leaderboard-list');
             const chatView = document.getElementById('chat-view');
@@ -264,7 +261,7 @@
                 }
             }
             
-            // Only required in IN_PROGRESS state, but must be defined to avoid errors in listeners
+
             let currentChatMode = 'answer';
             let currentSidebarView = 'chat';
             
@@ -303,7 +300,6 @@
         {% endif %}
 
 
-        // --- Shared WebSocket Listener ---
         ws.onmessage = function(event) {
             let data;
             try {
@@ -313,13 +309,11 @@
                 return;
             }
 
-            // Game State Transition Signals (Force Reload)
             if (data.type === 'game_start_signal' || data.type === 'game_end') {
                 window.location.reload(true);
                 return;
             }
             
-            // --- IN PROGRESS/FINISHED HANDLERS ---
             {% if game_state == "in_progress" or game_state == "finished" %}
                 
                 if (data.type === 'chat_message') {
@@ -327,7 +321,6 @@
                 } else if (data.type === 'score_update') {
                     renderLeaderboard(data.scores);
                     {% if game_state == "in_progress" %}
-                        // Only update pills if in progress
                         updateScoreboardPills(data.scores, userName, 'none'); 
                     {% endif %}
                 }
@@ -344,10 +337,8 @@
             console.log(`WebSocket connection closed for game ${gameId}.`);
         };
         
-        // --- IN_PROGRESS SPECIFIC JS (Full Game Logic) ---
         {% if game_state == "in_progress" %}
             
-            // Re-access all IN_PROGRESS DOM elements and state variables
             const showAnswerBtn = document.getElementById('showAnswerBtn');
             const cardContentContainer = document.getElementById('card-content-container');
             const cardFrontText = document.getElementById('card-front-text');
@@ -370,7 +361,6 @@
             
             if(cardContentContainer) cardContentContainer.style.fontSize = '1.5em';
             
-            // Full Helper Definitions (Required in this scope for closure)
             function initializeChatHistory() {
                 if (historyAnswer.querySelector('ul').children.length === 0) {
                     appendChatMessage("Grader", "Submit your answers for scoring.", 'answer');
@@ -438,10 +428,9 @@
                  setSidebarView('chat'); 
              }
             
-            // Overwrite ws.onmessage to include IN_PROGRESS specific data handling
             const originalWsOnMessage = ws.onmessage;
             ws.onmessage = function(event) {
-                 originalWsOnMessage(event); // Run shared logic first
+                 originalWsOnMessage(event);
                  
                  let data;
                  try {
@@ -450,7 +439,6 @@
                      return;
                  }
                  
-                 // Process IN_PROGRESS data types
                  if (data.type === 'new_card') {
                      currentCardData.front = data.front;
                      currentCardData.back = data.back;
@@ -467,13 +455,10 @@
                      setTimeout(() => { cardDisplayArea.style.backgroundColor = ''; }, 300);
                  } else if (data.type === 'answer_result') {
                      
-                     // --- START FIX ---
                      const resultText = data.result.toUpperCase();
-                     // Add the player's answer to the answer chat history
                      appendChatMessage(data.sender, 
                                        ` "${data.answer}".  ${resultText}`, 
                                        'answer');
-                     // --- END FIX ---
 
                      updateScoreboardPills(data.scores, data.sender, data.result);
                      if (data.sender === userName) {
@@ -483,7 +468,6 @@
                  }
             };
             
-            // Event Listeners for IN_PROGRESS
             modeAnswerBtn.addEventListener('click', () => setChatMode('answer'));
             modeFriendsBtn.addEventListener('click', () => setChatMode('friends'));
             modeLeaderboardBtn.addEventListener('click', function() {
@@ -531,7 +515,6 @@
                  }
             });
             
-            // Set initial chat view
             ws.onopen = function() {
                  initializeChatHistory();
                  setSidebarView('chat');

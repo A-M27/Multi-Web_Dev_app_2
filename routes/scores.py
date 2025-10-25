@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import select, Session
-from sqlalchemy.orm import selectinload # Import selectinload for efficient relationship loading
+from sqlalchemy.orm import selectinload
 from ..db.session import get_session
 from ..db.models import Set, Card, User, Score
 from ..auth import get_current_user
@@ -13,7 +13,7 @@ from datetime import datetime
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-# --- QUIZ ROUTES ---
+
 
 @router.get("/quiz", response_class=HTMLResponse)
 async def get_quiz_options(request: Request, session: Session = Depends(get_session),
@@ -22,18 +22,15 @@ async def get_quiz_options(request: Request, session: Session = Depends(get_sess
     if not current_user:
         return RedirectResponse(url="/users/login", status_code=303)
     
-    # CRITICAL FIX: Use selectinload to fetch the cards relationship eagerly.
-    # This prevents the program from crashing if a Set is returned with no Cards, 
-    # or if the session is closed when accessing the relationship.
-    query = select(Set).options(selectinload(Set.cards))
+
     
-    # Filter by user unless they are an admin
+
     if not current_user.is_admin:
         query = query.where(Set.user_id == current_user.id)
     
     sets = session.exec(query).all()
     
-    # Filter sets to ensure they have at least one card
+
     valid_sets = [s for s in sets if s.cards and len(s.cards) > 0]
     
     return templates.TemplateResponse(
@@ -49,7 +46,7 @@ async def start_quiz(request: Request, set_id: int, session: Session = Depends(g
     if not current_user:
         raise HTTPException(status_code=403, detail="Login required to take a quiz")
 
-    # Fetch set, eager load cards and user to ensure details are available for the template
+
     db_set = session.exec(
         select(Set)
         .options(selectinload(Set.cards))
@@ -85,7 +82,7 @@ async def submit_quiz(request: Request, session: Session = Depends(get_session),
     total = 0
     set_id = None
     
-    # Collect all card IDs submitted
+
     card_ids = []
     for key in form_data.keys():
         if key.startswith("answer-"):
@@ -97,12 +94,12 @@ async def submit_quiz(request: Request, session: Session = Depends(get_session),
     if not card_ids:
         raise HTTPException(status_code=400, detail="No answers submitted")
 
-    # Fetch cards for scoring and set ID
+
     submitted_cards = session.exec(select(Card).where(Card.id.in_(card_ids))).all()
     card_map = {card.id: card for card in submitted_cards}
 
     if submitted_cards:
-        # Get the set ID from the first submitted card
+
         set_id = submitted_cards[0].set_id
     
     for card_id in card_ids:
@@ -111,7 +108,7 @@ async def submit_quiz(request: Request, session: Session = Depends(get_session),
         
         if card:
             total += 1
-            # Simple case-insensitive comparison
+
             if user_answer.lower() == card.back.lower().strip():
                 score += 1
     
@@ -120,7 +117,7 @@ async def submit_quiz(request: Request, session: Session = Depends(get_session),
 
     percentage = (score / total) * 100 if total > 0 else 0
     
-    # Record the score
+
     new_score = Score(
         user_id=current_user.id,
         set_id=set_id,
@@ -137,7 +134,6 @@ async def submit_quiz(request: Request, session: Session = Depends(get_session),
         context={"score": score, "total": total, "percentage": percentage, "current_user": current_user}
     )
 
-# --- SCORE ROUTES ---
 
 @router.get("/scores", response_class=HTMLResponse)
 async def get_scores(request: Request, session: Session = Depends(get_session),
@@ -146,7 +142,7 @@ async def get_scores(request: Request, session: Session = Depends(get_session),
     if not current_user:
         raise HTTPException(status_code=403, detail="Login required to view scores")
     
-    # Ensure set details are loaded for the scores template
+
     scores = session.exec(
         select(Score)
         .options(selectinload(Score.set))

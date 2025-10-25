@@ -593,15 +593,15 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str,
                 
                 payload = data.get('payload', {})
                 answer = payload.get('answer', '').strip()
-                viewed_answer = payload.get('viewed_answer', False) # Check for zero score flag
+                viewed_answer = payload.get('viewed_answer', False)
                 
                 current_card = get_current_card(session, game)
                 
-                # Check for bad input (no text answer AND no view flag) or missing card
+
                 if not current_card or (not answer and not viewed_answer):
                     continue
 
-                # --- FIX 1: Implement Zero Score Logic ---
+
                 if viewed_answer:
                     result = 'wrong'
                     display_answer = "[ANSWER REVEALED] - Score: 0"
@@ -633,19 +633,19 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str,
                     continue
                     
                 if command == 'request_next_card':
-                    # Increment index
+
                     game.current_card_index += 1
                     
-                    # Check for hard end of list
+
                     if game.current_card_index >= len(game.card_ids):
                          game.state = "FINISHED"
                          await manager.broadcast({"type": "game_end", "message": f"Game **{game.set_name}** complete! Check the final leaderboard."}, game_id)
                          continue
                          
-                    # Use get_current_card (which may advance index if the card is deleted)
+
                     next_card = get_current_card(session, game)
                     
-                    # --- FIX 2: Handle game end after skipping deleted cards gracefully ---
+
                     if next_card:
                         card_data = {
                             "type": "new_card",
@@ -656,7 +656,7 @@ async def websocket_endpoint(websocket: WebSocket, game_id: str, client_id: str,
                         }
                         await manager.broadcast(card_data, game_id)
                     else:
-                        # If next_card is None, it means we hit the end of the list after skipping deleted ones.
+
                         game.state = "FINISHED"
                         await manager.broadcast({"type": "game_end", "message": f"Game **{game.set_name}** complete! All remaining cards were deleted or list exhausted."}, game_id)
                         

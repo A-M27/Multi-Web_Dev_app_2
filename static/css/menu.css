@@ -1,9 +1,3 @@
-/*
-    menu.css
-    Responsive navigation: Hamburger menu on small screens, full top banner on large screens.
-*/
-
-/* --- Large screen styles (≥300px) - Full top banner (Lateral Expansion) --- */
 @media screen and (min-width: 550px) {
     .banner {
         justify-content: space-between;
@@ -15,17 +9,16 @@
     }
     
 
-    /* Hide the menu button on large screens */
+
     .dropbtn {
         display: none; 
     }
 
-    /* Make the dropdown menu horizontal and always visible */
+
     .dropdown-content {
-        display: flex !important; /* Force open horizontally */
-        position: static; /* Make it part of the normal flow */
+        display: flex !important;
+        position: static;
         background-color: transparent;
-        /*box-shadow: 0 2px 4px #007BFF;*/
         box-shadow:0;
       
         width: 100%; 
@@ -33,17 +26,15 @@
         justify-content: space-around;
         margin: 0; 
         
-        flex-direction: row; /* Layout links horizontally (laterally) */
+        flex-direction: row;
         align-items: center; 
         gap: 2px;
 
-        /* OPTIONAL: Use this to space out elements across the entire width */
-        /* justify-content: space-between; */
     }
 
 
     .dropdown-content a {
-        color: black; /* Change link color for the dark banner */
+        color: black;
         padding: 12px 30px;
         white-space: nowrap;
         background-color: transparent;
@@ -61,7 +52,7 @@
      .dropdown-submenu:hover > a {
          background-color: #007BFF;
          color: white;
-         /*box-shadow: 0 2px 4px #007BFF;*/
+
      }
 
     .submenu-content a:hover {
@@ -69,11 +60,11 @@
         color: #007BFF;
     }
 
-    /* Submenu logic for horizontal desktop menu (drops down on hover) */
+
     .dropdown-submenu:hover .submenu-content {
         display: block;
-        position: absolute; /* Revert to absolute for desktop drop-down */
-        top: 100%; /* Drop down from the main link */
+        position: absolute;
+        top: 100%;
         left: 0;
         background-color: #ADD8E6;
         box-shadow: 0px 8px 16px 0px #007BFF;
@@ -81,7 +72,7 @@
         width: max-content;
     }
 
-    /* Hide the submenu content by default on desktop for hover activation */
+
     .dropdown-submenu .submenu-content {
         display: none; 
         position: absolute;
@@ -89,11 +80,11 @@
         top: 100%;
     }
 
-    /* Show the welcome message on large screens and push it to the right */
+
     .user-welcome {
         margin: 0;
         padding: 0 10px;
-        display: none; /* Hidden by default, shown by media query */
+        display: none;
         display: block;
         color: blue;
     }
