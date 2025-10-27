@@ -1,8 +1,13 @@
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import Session, Field, SQLModel, create_engine, select, Relationship
+from typing import Annotated
 from fastapi import Depends
 
-DATABASE_URL = "sqlite:///database.db"
-engine = create_engine(DATABASE_URL, echo=True)
+#SQL Code Setup
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args)
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -10,3 +15,5 @@ def create_db_and_tables():
 def get_session():
     with Session(engine) as session:
         yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
